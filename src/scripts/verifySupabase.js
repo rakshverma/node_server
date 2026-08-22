@@ -81,8 +81,8 @@ async function main() {
     }
   }
 
-  if (!hasAnyEnv(["SUPABASE_DB_URL", "SUPABASE_POSTGRES_URL"])) {
-    console.error("Database check skipped: SUPABASE_DB_URL or SUPABASE_POSTGRES_URL is required");
+  if (!hasAnyEnv(["SUPABASE_DB_URL", "SUPABASE_POSTGRES_URL", "DATABASE_URL"])) {
+    console.error("Database check skipped: SUPABASE_DB_URL, SUPABASE_POSTGRES_URL, or DATABASE_URL is required");
     if (hasAnyEnv(["SUPABASE_URL"]) && hasAnyEnv(["SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_SECRET_KEY"])) {
       try {
         console.log(await verifyTablesViaApi());

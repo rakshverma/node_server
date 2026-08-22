@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const { getSupabaseHealth } = require("../utils/supabaseHealth");
 
 router.get("/", function (req, res) {
   res.send("Bytes api working fine");
@@ -10,6 +11,16 @@ router.get("/health", function (req, res) {
     status: "ok",
     service: "jhatkabyte-api",
     timestamp: new Date().toISOString(),
+  });
+});
+
+router.get("/health/deep", async function (req, res) {
+  const supabase = await getSupabaseHealth();
+  res.status(supabase.ok ? 200 : 500).send({
+    status: supabase.ok ? "ok" : "error",
+    service: "jhatkabyte-api",
+    timestamp: new Date().toISOString(),
+    supabase,
   });
 });
 

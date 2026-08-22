@@ -19,6 +19,8 @@ services:
         sync: false
       - key: SUPABASE_DB_URL
         sync: false
+      - key: DATABASE_URL
+        sync: false
       - key: SUPABASE_DB_SSL
         value: "true"
       - key: SUPABASE_STORAGE_BUCKET

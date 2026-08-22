@@ -10,7 +10,7 @@ const config = {
     supabase: {
       url: process.env.SUPABASE_URL,
       serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY,
-      dbUrl: process.env.SUPABASE_DB_URL || process.env.SUPABASE_POSTGRES_URL,
+      dbUrl: process.env.SUPABASE_DB_URL || process.env.SUPABASE_POSTGRES_URL || process.env.DATABASE_URL,
       storageBucket: process.env.SUPABASE_STORAGE_BUCKET || "jb-bucket",
       storagePublic: process.env.SUPABASE_STORAGE_PUBLIC !== "false",
     },
@@ -28,7 +28,7 @@ const config = {
     supabase: {
       url: process.env.SUPABASE_URL,
       serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY,
-      dbUrl: process.env.SUPABASE_DB_URL || process.env.SUPABASE_POSTGRES_URL,
+      dbUrl: process.env.SUPABASE_DB_URL || process.env.SUPABASE_POSTGRES_URL || process.env.DATABASE_URL,
       storageBucket: process.env.SUPABASE_STORAGE_BUCKET || "jb-bucket",
       storagePublic: process.env.SUPABASE_STORAGE_PUBLIC !== "false",
     },

@@ -1,10 +1,10 @@
 const { Pool } = require("pg");
 const config = require("./index").get(process.env.ENV);
 
-const dbUrl = process.env.SUPABASE_DB_URL || process.env.SUPABASE_POSTGRES_URL || config.supabase?.dbUrl;
+const dbUrl = process.env.SUPABASE_DB_URL || process.env.SUPABASE_POSTGRES_URL || process.env.DATABASE_URL || config.supabase?.dbUrl;
 
 if (!dbUrl) {
-  console.warn("SUPABASE_DB_URL is not set. Database queries will fail until Supabase DB connection details are configured.");
+  console.warn("SUPABASE_DB_URL, SUPABASE_POSTGRES_URL, or DATABASE_URL is not set. Database queries will fail until Supabase DB connection details are configured.");
 }
 
 const sslConfig =
