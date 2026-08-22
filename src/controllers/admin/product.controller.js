@@ -5,15 +5,15 @@ const addProduct = async (req, res) => {
   try {
     const files = req?.files || [];
     if (files.length === 0) {
-      response.send(res, 500, 0, "Unable to upload images and add product. Please try again.", {});
+      return response.send(res, 400, 0, "Please upload at least one product image.", {});
     } else {
       console.log("REQ BODY = ", req.body);
       const checkValid = await productService.validateAddProducts(req.body, files);
-      if (!checkValid) return response.send(res, 500, 0, checkValid.msg, {});
+      if (!checkValid.status) return response.send(res, 400, 0, checkValid.msg, {});
       const save = await productService.addProduct(req.body, files);
       console.log("save = ", save);
       if (save.status) return response.send(res, 200, 1, save.msg, {});
-      else return response.send(res, 500, 0, save.msg, {});
+      else return response.send(res, save.statusCode || 500, 0, save.msg, {});
     }
   } catch (e) {
     response.send(res, 500, 0, "Something went wrong. Please try again.", {});
@@ -24,13 +24,13 @@ const editProduct = async (req, res) => {
   try {
     const { productId } = req.params;
     const files = req?.files || [];
-    if (!productId) response.send(res, 500, 0, "Unable to edit product. Please try again.", {});
+    if (!productId) return response.send(res, 400, 0, "Unable to edit product. Please try again.", {});
     const checkValid = await productService.validateAddProducts(req.body, files);
-    if (!checkValid) return response.send(res, 500, 0, checkValid.msg, {});
+    if (!checkValid.status) return response.send(res, 400, 0, checkValid.msg, {});
     const save = await productService.editProduct(req.body, files, productId);
     console.log("save = ", save);
     if (save.status) return response.send(res, 200, 1, save.msg, {});
-    else return response.send(res, 500, 0, save.msg, {});
+    else return response.send(res, save.statusCode || 500, 0, save.msg, {});
   } catch (e) {
     response.send(res, 500, 0, "Something went wrong. Please try again.", {});
   }
@@ -48,7 +48,7 @@ const priceeditinfo = async (req, res) => {
   console.log("req.params = ", req.params);
   const { productId, distributerId } = req.params;
   const { user_id, role_id } = req;
-  if (!productId || !distributerId) return response.send(res, 500, 0, "Invalid Request. Unable to fetch price info", {});
+  if (!productId || !distributerId) return response.send(res, 400, 0, "Invalid Request. Unable to fetch price info", {});
   const validUser = await productService.validateUserForPriceInfo({
     productId,
     distributerId,
@@ -56,7 +56,7 @@ const priceeditinfo = async (req, res) => {
     role_id,
   });
   console.log("validUser = ", validUser);
-  if (!validUser.status) return response.send(res, 500, 0, validUser.msg, {});
+  if (!validUser.status) return response.send(res, 403, 0, validUser.msg, {});
   const priceInfo = await productService.getEditPriceInfo({
     productId,
     distributerId,
@@ -70,7 +70,7 @@ const priceeditinfo = async (req, res) => {
 const getProductPriceOnFranchise = async (req, res) => {
   const { distributerId } = req.params;
   const { user_id, role_id } = req;
-  if (!distributerId) return response.send(res, 500, 0, "Something went wrong.", {});
+  if (!distributerId) return response.send(res, 400, 0, "Something went wrong.", {});
   const productList = await productService.getProductPriceOnFranchise(distributerId);
   if (productList.status) response.send(res, 200, 1, "", productList.responseObj);
   else return response.send(res, 500, 0, productList.msg, {});
@@ -81,7 +81,7 @@ const updateProductPrice = async (req, res) => {
   const { user_id, role_id } = req;
   console.log(req.body);
   const data = req.body;
-  if (!distributerId || !productId) return response.send(res, 500, 0, "Invalid Request. Try again.", {});
+  if (!distributerId || !productId) return response.send(res, 400, 0, "Invalid Request. Try again.", {});
   const updateProduct = await productService.updateProductPrice({ productId, distributerId, user_id, role_id, data });
   if (updateProduct.status) response.send(res, 200, 1, "", {});
   else return response.send(res, 500, 0, updateProduct.msg, {});

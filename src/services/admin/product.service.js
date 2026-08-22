@@ -30,6 +30,7 @@ const addProduct = async (data, files) => {
     if (check.length)
       return {
         status: false,
+        statusCode: 409,
         msg: "Product name already exists.",
         responseObj: {},
       };
@@ -59,6 +60,7 @@ const editProduct = async (data, files, productId) => {
     if (check.length)
       return {
         status: false,
+        statusCode: 409,
         msg: "Product name already exists.",
         responseObj: {},
       };

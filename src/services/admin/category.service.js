@@ -5,15 +5,16 @@ const {
 
 const addCategory = async (category) => {
   try {
-    const sql = "SELECT id from tbl_category where name = ?";
-    const check = await runMysqlQueryWithParam(sql, [category]);
+    const normalizedCategory = category.trim();
+    const sql = "SELECT id from tbl_category where LOWER(name) = LOWER(?)";
+    const check = await runMysqlQueryWithParam(sql, [normalizedCategory]);
     console.log("CHECK = ", check);
     if (check.length) {
-      return { status: false, msg: "Category name already exists." };
+      return { status: false, statusCode: 409, msg: "Category name already exists." };
     }
 
     const insertSql = "INSERT INTO tbl_category set name=?";
-    const insert = await runMysqlQueryWithParam(insertSql, [category]);
+    const insert = await runMysqlQueryWithParam(insertSql, [normalizedCategory]);
     console.log("INSERT = ", insert);
     if (insert) {
       return {
@@ -33,15 +34,16 @@ const addCategory = async (category) => {
 
 const editCategory = async (category, id) => {
   try {
-    const sql = "SELECT id from tbl_category where name = ?";
-    const check = await runMysqlQueryWithParam(sql, [category]);
+    const normalizedCategory = category.trim();
+    const sql = "SELECT id from tbl_category where LOWER(name) = LOWER(?) AND id!=?";
+    const check = await runMysqlQueryWithParam(sql, [normalizedCategory, id]);
     console.log("CHECK = ", check);
     if (check.length) {
-      return { status: false, msg: "Category name already exists." };
+      return { status: false, statusCode: 409, msg: "Category name already exists." };
     }
 
     const updateSql = "UPDATE tbl_category set name=? where id=?";
-    const update = await runMysqlQueryWithParam(updateSql, [category, id]);
+    const update = await runMysqlQueryWithParam(updateSql, [normalizedCategory, id]);
     console.log("UPDATE = ", update);
     if (update) {
       return {
@@ -63,18 +65,11 @@ const getCategoryList = async () => {
   try {
     const sql = "SELECT * FROM tbl_category ORDER BY id DESC";
     const list = await runMysqlQuery(sql);
-    if (list.length) {
-      return {
-        status: true,
-        msg: "Category list fetched successfully",
-        responseObj: list,
-      };
-    } else {
-      return {
-        status: false,
-        msg: "Unable to get category list. Please try again.",
-      };
-    }
+    return {
+      status: true,
+      msg: "Category list fetched successfully",
+      responseObj: list,
+    };
   } catch (e) {
     console.log("get category error= ", e);
     return {
