@@ -32,7 +32,12 @@ app.listen(port, () => {
 });
 
 app.use(compression());
-app.use(helmet());
+app.use(
+  helmet({
+    crossOriginEmbedderPolicy: false,
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+  })
+);
 app.use(xss());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
