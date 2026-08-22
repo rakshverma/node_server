@@ -52,18 +52,65 @@ function validateCartForPincode(cartInfo, pincode) {
         Number(priceRow.price) === Number(item.price)
       );
     });
+    const hasTrackedStock = matchingPrice && matchingPrice.stock_count !== undefined && matchingPrice.stock_count !== null && `${matchingPrice.stock_count}` !== "";
+    const stockCount = hasTrackedStock ? Number(matchingPrice.stock_count) : null;
 
     if (
       Number(item.product_status) !== 1 ||
       Number(item.is_available) !== 1 ||
       !franchiseZipCodes.includes(normalizedPincode) ||
-      !matchingPrice
+      !matchingPrice ||
+      (hasTrackedStock && (!Number.isFinite(stockCount) || stockCount < Number(item.count)))
     ) {
       unavailableNames.push(name);
     }
   });
 
   return [...new Set(unavailableNames)];
+}
+
+async function updateStockAfterOrder(connection, cartInfo) {
+  const groupedItems = cartInfo.reduce((groups, item) => {
+    const key = `${item.productId}-${item.franchiseId}`;
+    groups[key] = groups[key] || [];
+    groups[key].push(item);
+    return groups;
+  }, {});
+
+  for (const items of Object.values(groupedItems)) {
+    const firstItem = items[0];
+    let updatedPriceRows = parseJsonArray(firstItem.quantity_wise_price);
+    let didTrackStock = false;
+
+    items.forEach((item) => {
+      updatedPriceRows = updatedPriceRows.map((priceRow) => {
+        const isSelectedRow =
+          Number(priceRow.quantity) === Number(item.quantity) &&
+          `${priceRow.unit}` === `${item.unit}` &&
+          Number(priceRow.price) === Number(item.price);
+        const hasTrackedStock = priceRow.stock_count !== undefined && priceRow.stock_count !== null && `${priceRow.stock_count}` !== "";
+
+        if (!isSelectedRow || !hasTrackedStock) return priceRow;
+
+        didTrackStock = true;
+        const nextStock = Math.max(0, Number(priceRow.stock_count) - Number(item.count));
+        return { ...priceRow, stock_count: nextStock };
+      });
+    });
+
+    if (!didTrackStock) continue;
+
+    const allTrackedRowsSoldOut = updatedPriceRows.length > 0 && updatedPriceRows.every((priceRow) => {
+      const hasTrackedStock = priceRow.stock_count !== undefined && priceRow.stock_count !== null && `${priceRow.stock_count}` !== "";
+      return hasTrackedStock && Number(priceRow.stock_count) <= 0;
+    });
+
+    await runTransectionQuery(
+      connection,
+      "UPDATE tbl_product_price SET quantity_wise_price=?, is_available=? WHERE product_id=? AND user_id=?",
+      [JSON.stringify(updatedPriceRows), allTrackedRowsSoldOut ? 0 : 1, firstItem.productId, firstItem.franchiseId]
+    );
+  }
 }
 
 const addOrderDetails = async (formData, cartId, deliveryDates, existingUserId, isPincodeChanged, shipping_cost) => {
@@ -192,6 +239,7 @@ const addOrderDetails = async (formData, cartId, deliveryDates, existingUserId, 
         originalShipping,
       ]);
       await runTransectionQuery(connection, detailsSql, [values]);
+      await updateStockAfterOrder(connection, cartInfo);
       const receipt = await createOrderReceipt(connection, orderArr, cartInfo, orderId, formData.email, deliveryDates);
 
       let user = {};

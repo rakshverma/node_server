@@ -13,6 +13,19 @@ function normalizePinCodes(pinCodes) {
   return [];
 }
 
+function normalizePriceRows(rows) {
+  const list = Array.isArray(rows) ? rows : [];
+  return list.map((row) => {
+    const normalized = { ...row };
+    if (normalized.stock_count === undefined || normalized.stock_count === null || `${normalized.stock_count}` === "") {
+      delete normalized.stock_count;
+    } else {
+      normalized.stock_count = Math.max(0, Number(normalized.stock_count) || 0);
+    }
+    return normalized;
+  });
+}
+
 const validateAddProducts = async (data, fileNames) => {
   try {
     const { name, category, description } = data;
@@ -268,7 +281,7 @@ const updateProductPrice = async (info) => {
       const update = await runMysqlQueryWithParam(sql, [
         distributerRoleId[0].role_id,
         user_id,
-        JSON.stringify(data.quantity_wise_price),
+        JSON.stringify(normalizePriceRows(data.quantity_wise_price)),
         data.is_available,
         JSON.stringify(data.delevery_days),
         productId,
@@ -292,7 +305,7 @@ const updateProductPrice = async (info) => {
       distributerRoleId[0].role_id,
       distributerId,
       user_id,
-      JSON.stringify(data.quantity_wise_price),
+      JSON.stringify(normalizePriceRows(data.quantity_wise_price)),
       data.is_available,
       JSON.stringify(data.delevery_days),
     ]);
