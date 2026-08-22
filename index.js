@@ -8,7 +8,7 @@ const helmet = require("helmet");
 const morgan = require("morgan");
 const xss = require("xss-clean");
 const appRoutes = require("./src/routes");
-const { getPublicUrl } = require("./src/utils/supabaseStorage");
+const { createSignedUrl } = require("./src/utils/supabaseStorage");
 const app = express();
 const port = process.env.PORT || 3000;
 const allowedOrigins = (process.env.CORS_ORIGINS || "http://localhost:3005,http://localhost:3006")
@@ -39,10 +39,16 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cors(corsOptions));
 app.options("*", cors(corsOptions));
 app.use(morgan("combined"));
-app.get("/uploads/*", (req, res) => {
-  const filePath = req.params[0];
-  if (!filePath) return res.status(404).send({ error: "File not found" });
-  return res.redirect(getPublicUrl(filePath));
+app.get("/uploads/*", async (req, res) => {
+  try {
+    const filePath = req.params[0];
+    if (!filePath) return res.status(404).send({ error: "File not found" });
+    const signedUrl = await createSignedUrl(filePath);
+    return res.redirect(signedUrl);
+  } catch (error) {
+    console.log("Storage redirect error = ", error);
+    return res.status(404).send({ error: "File not found" });
+  }
 });
 app.use(function (req, res, next) {
   next();

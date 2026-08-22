@@ -1,6 +1,18 @@
 const { runMysqlQuery, runMysqlQueryWithParam } = require("../../config/mysqlConfig");
 const { deleteFiles, uploadFiles } = require("../../utils/supabaseStorage");
 
+function normalizePinCodes(pinCodes) {
+  if (Array.isArray(pinCodes)) {
+    return [...new Set(pinCodes.map((pin) => `${pin}`.trim()).filter(Boolean))];
+  }
+
+  if (typeof pinCodes === "string") {
+    return [...new Set(pinCodes.split(/[\s,]+/).map((pin) => pin.trim()).filter(Boolean))];
+  }
+
+  return [];
+}
+
 const validateAddProducts = async (data, fileNames) => {
   try {
     const { name, category, description } = data;
@@ -186,7 +198,7 @@ ON p.id = pp.product_id WHERE p.id=?`;
     const productPrice = await runMysqlQueryWithParam(sql, [distributerId, productId]);
     console.log("productPrice = ", productPrice);
     if (!productPrice.length) return { status: false, msg: "User not authorized to edit price" };
-    const franchiseSql = `SELECT id, name, IF(u.role_id = 2, (SELECT f.franchise_name FROM tbl_franchise_details f WHERE u.id = f.user_id), NULL) AS franchise_name from tbl_users u WHERE u.id=?`;
+    const franchiseSql = `SELECT u.id, u.name, f.zip_codes, IF(u.role_id = 2, (SELECT f.franchise_name FROM tbl_franchise_details f WHERE u.id = f.user_id), NULL) AS franchise_name from tbl_users u LEFT JOIN tbl_franchise_details f ON u.id=f.user_id WHERE u.id=?`;
     const franchiseInfo = await runMysqlQueryWithParam(franchiseSql, [distributerId]);
     return { status: true, msg: "", responseObj: { editInfo: productPrice[0], franchiseInfo: franchiseInfo[0] } };
   } catch (e) {
@@ -228,11 +240,22 @@ const updateProductPrice = async (info) => {
   try {
     const { productId, distributerId, user_id, role_id, data } = info;
     console.log("edit data = ", productId, distributerId, user_id, role_id, data);
+    const pinCodes = normalizePinCodes(data.pinCodes);
     const checkSql = `SELECT id from tbl_product_price WHERE product_id=? AND user_id=?`;
     const check = await runMysqlQueryWithParam(checkSql, [productId, distributerId]);
     const roleSql = `SELECT role_id from tbl_users where id=?`;
     const distributerRoleId = await runMysqlQueryWithParam(roleSql, [distributerId]);
     if (!distributerRoleId.length) return { status: false, msg: "Unable to update price info. Please try again." };
+    if (pinCodes.length) {
+      await runMysqlQueryWithParam(`UPDATE tbl_franchise_details SET zip_codes=? WHERE user_id=?`, [JSON.stringify(pinCodes), distributerId]);
+      const shippingValues = pinCodes.map((pinCode) => [distributerId, pinCode, 0]);
+      const shippingSql = `
+        INSERT INTO tbl_shipping_cost (user_id, pin_code, shipping_cost)
+        VALUES ?
+        ON DUPLICATE KEY UPDATE user_id = VALUES(user_id), shipping_cost = VALUES(shipping_cost)
+      `;
+      await runMysqlQueryWithParam(shippingSql, [shippingValues]);
+    }
     if (check.length && distributerRoleId.length) {
       const sql = `UPDATE tbl_product_price 
                    SET 

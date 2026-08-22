@@ -31,6 +31,15 @@ const getProductList = async (pinCode) => {
       franchiseId = franchise[0].user_id;
     }
     console.log("franchise = ", franchise);
+    const priceJoin = franchiseId
+      ? `SELECT * FROM tbl_product_price WHERE user_id=?`
+      : `SELECT *
+         FROM (
+           SELECT pp.*, ROW_NUMBER() OVER (PARTITION BY product_id ORDER BY is_available DESC, id ASC) AS row_number
+           FROM tbl_product_price pp
+         ) ranked_prices
+         WHERE row_number=1`;
+    const params = franchiseId ? [franchiseId] : [];
     const sql = `SELECT p.*, 
                   IFNULL(pp.quantity_wise_price, null) as quantity_wise_price,
                   IFNULL(pp.is_available, 0) as is_available,
@@ -39,13 +48,11 @@ const getProductList = async (pinCode) => {
                   c.name AS category_name
                 FROM tbl_products p
                 LEFT JOIN (
-                SELECT *
-                FROM tbl_product_price
-                WHERE user_id=?
+                ${priceJoin}
                 ) pp 
                 ON p.id = pp.product_id
                 LEFT JOIN tbl_category c ON p.category_id = c.id WHERE p.status=1 ORDER BY p.id DESC`;
-    const list = await runMysqlQueryWithParam(sql, [franchiseId]);
+    const list = await runMysqlQueryWithParam(sql, params);
     return { status: true, msg: "Product list fetched successfully", responseObj: list };
   } catch (e) {
     console.log(e);

@@ -24,6 +24,12 @@ async function uploadBuffer(buffer, filePath, contentType = "application/octet-s
   return filePath;
 }
 
+async function createSignedUrl(filePath, expiresIn = 60 * 60) {
+  const { data, error } = await supabase.storage.from(bucket).createSignedUrl(filePath, expiresIn);
+  if (error) throw error;
+  return data.signedUrl;
+}
+
 async function uploadFiles(files = [], folder = "uploads") {
   const uploadedPaths = [];
 
@@ -48,6 +54,7 @@ async function deleteFiles(filePaths = []) {
 module.exports = {
   bucket,
   getPublicUrl,
+  createSignedUrl,
   uploadBuffer,
   uploadFiles,
   deleteFiles,

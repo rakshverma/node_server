@@ -8,6 +8,7 @@
     "start-dev": "nodemon index.js",
     "verify:supabase": "node src/scripts/verifySupabase.js",
     "db:schema": "node src/scripts/applySupabaseSchema.js",
+    "db:reset:data": "node src/scripts/resetSupabaseData.js",
     "admin:create": "node src/scripts/createAdminUser.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
