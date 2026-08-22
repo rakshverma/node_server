@@ -33,13 +33,13 @@ const getAllOrders = async (user_id, role_id) => {
             o.additional_notes,
             c.email,
             (select franchise_name from tbl_franchise_details where user_id=o.franchise_id) as franchise_name,
-            GROUP_CONCAT(p.name) AS product_names,
-            GROUP_CONCAT(od.quantity) AS quantity,
-            GROUP_CONCAT(od.price) AS price,
-            GROUP_CONCAT(od.unit) AS units,
-            GROUP_CONCAT(od.count) AS counts,
-            GROUP_CONCAT(od.delivery_status) AS delivery_status,
-            GROUP_CONCAT(od.delivery_date) AS delivery_date
+            STRING_AGG(p.name::text, ',') AS product_names,
+            STRING_AGG(od.quantity::text, ',') AS quantity,
+            STRING_AGG(od.price::text, ',') AS price,
+            STRING_AGG(od.unit::text, ',') AS units,
+            STRING_AGG(od.count::text, ',') AS counts,
+            STRING_AGG(od.delivery_status::text, ',') AS delivery_status,
+            STRING_AGG(od.delivery_date::text, ',') AS delivery_date
         FROM tbl_orders o
         INNER JOIN tbl_franchise_details f ON o.franchise_id = f.user_id
         INNER JOIN tbl_users c ON o.user_id = c.id
@@ -47,7 +47,7 @@ const getAllOrders = async (user_id, role_id) => {
         INNER JOIN tbl_products p ON od.product_id = p.id 
        
         ${whereClause} 
-        GROUP BY o.id
+        GROUP BY o.id, c.email
         ORDER BY o.inserted_at DESC;`;
       const list = await runMysqlQueryWithParam(sql, params);
       return { status: true, msg: "Order list fetched successfully", responseObj: list };
@@ -89,13 +89,13 @@ const getAllOrdersByFranchise = async (user_id, role_id, franchiseId) => {
             o.shipping_cost,
             c.email,
             (select franchise_name from tbl_franchise_details where user_id=o.franchise_id) as franchise_name,
-            GROUP_CONCAT(p.name) AS product_names,
-            GROUP_CONCAT(od.quantity) AS quantity,
-            GROUP_CONCAT(od.price) AS price,
-            GROUP_CONCAT(od.unit) AS units,
-            GROUP_CONCAT(od.count) AS counts,
-            GROUP_CONCAT(od.delivery_status) AS delivery_status,
-            GROUP_CONCAT(od.delivery_date) AS delivery_date
+            STRING_AGG(p.name::text, ',') AS product_names,
+            STRING_AGG(od.quantity::text, ',') AS quantity,
+            STRING_AGG(od.price::text, ',') AS price,
+            STRING_AGG(od.unit::text, ',') AS units,
+            STRING_AGG(od.count::text, ',') AS counts,
+            STRING_AGG(od.delivery_status::text, ',') AS delivery_status,
+            STRING_AGG(od.delivery_date::text, ',') AS delivery_date
         FROM tbl_orders o
         INNER JOIN tbl_franchise_details f ON o.franchise_id = f.user_id
         INNER JOIN tbl_users c ON o.user_id = c.id
@@ -103,7 +103,7 @@ const getAllOrdersByFranchise = async (user_id, role_id, franchiseId) => {
         INNER JOIN tbl_products p ON od.product_id = p.id 
        
         ${whereClause} 
-        GROUP BY o.id
+        GROUP BY o.id, c.email
         ORDER BY o.inserted_at DESC;`;
       const list = await runMysqlQueryWithParam(sql, params);
       return { status: true, msg: "Order list fetched successfully", responseObj: list };

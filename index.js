@@ -44,7 +44,7 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cors(corsOptions));
 app.options("*", cors(corsOptions));
 app.use(morgan("combined"));
-app.get("/uploads/*", async (req, res) => {
+app.get(["/uploads/*", "/upload/*"], async (req, res) => {
   try {
     const filePath = req.params[0];
     if (!filePath) return res.status(404).send({ error: "File not found" });
