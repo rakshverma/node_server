@@ -1,0 +1,59 @@
+-- MySQL dump 10.13  Distrib 8.0.31, for macos12 (x86_64)
+--
+-- Host: 127.0.0.1    Database: bytedb
+-- ------------------------------------------------------
+-- Server version	8.0.31
+
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!50503 SET NAMES utf8 */;
+/*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
+/*!40103 SET TIME_ZONE='+00:00' */;
+/*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
+/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
+/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
+/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
+
+--
+-- Table structure for table `tbl_cart`
+--
+
+DROP TABLE IF EXISTS `tbl_cart`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `tbl_cart` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `cartId` varchar(50) NOT NULL,
+  `userId` int DEFAULT NULL,
+  `productId` int DEFAULT NULL,
+  `franchiseId` int DEFAULT NULL,
+  `price` double DEFAULT NULL,
+  `quantity` int DEFAULT NULL,
+  `unit` varchar(5) DEFAULT NULL,
+  `count` int DEFAULT NULL,
+  `shippingCost` double DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=143 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `tbl_cart`
+--
+
+LOCK TABLES `tbl_cart` WRITE;
+/*!40000 ALTER TABLE `tbl_cart` DISABLE KEYS */;
+INSERT INTO `tbl_cart` VALUES (81,'9d7c9464-3654-31ca-021c-57cf2eec0a9e',NULL,11,1,250,1,'kg',1,NULL),(82,'9d7c9464-3654-31ca-021c-57cf2eec0a9e',NULL,10,1,600,2,'kg',1,NULL),(83,'9d7c9464-3654-31ca-021c-57cf2eec0a9e',NULL,10,1,350,1,'kg',1,NULL),(84,'d3ea87a3-afc0-8ae9-4131-bd94914694db',NULL,11,1,250,1,'kg',1,NULL),(85,'d3ea87a3-afc0-8ae9-4131-bd94914694db',NULL,10,1,350,1,'kg',1,NULL),(86,'d3ea87a3-afc0-8ae9-4131-bd94914694db',NULL,10,1,600,2,'kg',1,NULL),(87,'2fefff84-e10b-683d-8bbb-8a3ac5d5f452',NULL,11,1,250,1,'kg',1,NULL),(88,'2fefff84-e10b-683d-8bbb-8a3ac5d5f452',38,10,1,600,2,'kg',1,NULL),(108,'916ab562-2866-cbd7-b4bd-0416749ee164',41,8,5,100,1,'kg',1,NULL),(109,'05785970-b4ce-73ee-fc1c-5bcebf8b6425',43,11,1,250,1,'kg',1,NULL),(110,'05785970-b4ce-73ee-fc1c-5bcebf8b6425',43,11,1,400,2,'kg',1,NULL),(111,'05785970-b4ce-73ee-fc1c-5bcebf8b6425',43,9,1,200,1,'kg',1,NULL),(125,'3eb7dc9d-01e2-91ee-a650-88f0e88f7086',NULL,11,1,250,1,'kg',1,NULL);
+/*!40000 ALTER TABLE `tbl_cart` ENABLE KEYS */;
+UNLOCK TABLES;
+/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
+
+/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
+/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
+/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
+
+-- Dump completed on 2023-09-16 11:02:04
