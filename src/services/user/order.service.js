@@ -15,10 +15,62 @@ const {
   rollback,
 } = require("../../config/mysqlConfig");
 
+function parseJsonArray(value) {
+  if (!value) return [];
+  if (Array.isArray(value)) return value;
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function buildReceiptUrl(orderId) {
+  return `/uploads/invoices/${Number(orderId) + 1000}_invoice.pdf`;
+}
+
+function attachReceiptUrls(orders) {
+  return orders.map((order) => ({
+    ...order,
+    receipt_url: buildReceiptUrl(order.id),
+  }));
+}
+
+function validateCartForPincode(cartInfo, pincode) {
+  const unavailableNames = [];
+  const normalizedPincode = `${pincode || ""}`.trim();
+
+  cartInfo.forEach((item) => {
+    const name = item.name || "Item";
+    const franchiseZipCodes = parseJsonArray(item.franchise_zip_codes).map((pin) => `${pin}`.trim());
+    const priceRows = parseJsonArray(item.quantity_wise_price);
+    const matchingPrice = priceRows.find((priceRow) => {
+      return (
+        Number(priceRow.quantity) === Number(item.quantity) &&
+        `${priceRow.unit}` === `${item.unit}` &&
+        Number(priceRow.price) === Number(item.price)
+      );
+    });
+
+    if (
+      Number(item.product_status) !== 1 ||
+      Number(item.is_available) !== 1 ||
+      !franchiseZipCodes.includes(normalizedPincode) ||
+      !matchingPrice
+    ) {
+      unavailableNames.push(name);
+    }
+  });
+
+  return [...new Set(unavailableNames)];
+}
+
 const addOrderDetails = async (formData, cartId, deliveryDates, existingUserId, isPincodeChanged, shipping_cost) => {
   try {
-    const cartSql = `SELECT p.name, p.images, c.cartId, c.userId, c.productId, c.franchiseId, c.quantity, c.unit, c.price, c.shippingCost, c.count, pp.is_available, u.status,
-                      IFNULL(pp.quantity_wise_price, null) as quantity_wise_price
+    const cartSql = `SELECT p.name, p.images, p.status AS product_status, c.cartId, c.userId, c.productId, c.franchiseId, c.quantity, c.unit, c.price, c.shippingCost, c.count, pp.is_available, u.status,
+                      IFNULL(pp.quantity_wise_price, null) as quantity_wise_price,
+                      f.zip_codes AS franchise_zip_codes
                       FROM tbl_cart c 
                       LEFT JOIN tbl_products p 
                       ON c.productId = p.id 
@@ -26,6 +78,8 @@ const addOrderDetails = async (formData, cartId, deliveryDates, existingUserId, 
                       ON c.productId = pp.product_id
                       LEFT JOIN tbl_users u
                       ON u.id=c.franchiseId
+                      LEFT JOIN tbl_franchise_details f
+                      ON f.user_id=c.franchiseId
                       WHERE c.cartId=? AND c.franchiseId = pp.user_id`;
     const cartInfo = await runMysqlQueryWithParam(cartSql, [cartId]);
     if (!cartInfo.length) return { status: false, msg: "Unable to place order. Check cart details", responseObj: {} };
@@ -39,21 +93,13 @@ const addOrderDetails = async (formData, cartId, deliveryDates, existingUserId, 
       originalShipping = originalShippingCostArr[0].shipping_cost;
     }
 
-    if (cartInfo.length) {
-      const unavilableNames = [];
-      cartInfo.forEach((obj) => {
-        if (obj.is_available == 0) {
-          unavilableNames.push(obj.name);
-        }
-      });
-
-      if (unavilableNames.length) {
-        return {
-          status: false,
-          msg: "Few of the items are not available. Please remove them from cart and place order again.",
-          responseObj: unavilableNames,
-        };
-      }
+    const unavailableNames = validateCartForPincode(cartInfo, formData.pincode);
+    if (unavailableNames.length) {
+      return {
+        status: false,
+        msg: "Few cart items are no longer available for this pincode. Please remove them and try again.",
+        responseObj: unavailableNames,
+      };
     }
     let subTotal = 0;
     let shipping = shipping_cost;
@@ -274,7 +320,7 @@ const getOrderList = async (refId, user_id, role_id, pid) => {
         orderList.push({ ...item, itemList: products });
       });
     }
-    return { status: true, msg: "order list fetched successfully", responseObj: orderList };
+    return { status: true, msg: "order list fetched successfully", responseObj: attachReceiptUrls(orderList) };
   } catch (e) {
     return { status: false, msg: "Unable to fetch order list. Please try again", responseObj: [] };
   }
@@ -343,7 +389,7 @@ const getOrderItemOnId = async (refId) => {
         orderList.push({ ...item, itemList: products });
       });
     }
-    return { status: true, msg: "order list fetched successfully", responseObj: orderList };
+    return { status: true, msg: "order list fetched successfully", responseObj: attachReceiptUrls(orderList) };
   } catch (e) {
     return { status: false, msg: "Unable to fetch order list. Please try again", responseObj: [] };
   }
@@ -363,7 +409,7 @@ function getOrderProductHtml(cartInfo, deliveryDates, list) {
       </p>
     </td>
     <td className="text-end">${delivery_date}</td>
-    <td className="text-end">₹${price * count.toFixed(2)}</td>
+    <td className="text-end">₹${(Number(price) * Number(count)).toFixed(2)}</td>
   </tr>`;
   });
 

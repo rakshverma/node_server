@@ -8,6 +8,17 @@ const {
   rollback,
 } = require("../../config/mysqlConfig");
 
+function buildReceiptUrl(orderId) {
+  return `/uploads/invoices/${Number(orderId) + 1000}_invoice.pdf`;
+}
+
+function attachReceiptUrls(orders) {
+  return orders.map((order) => ({
+    ...order,
+    receipt_url: buildReceiptUrl(order.id),
+  }));
+}
+
 const getAllOrders = async (user_id, role_id) => {
   try {
     if (role_id === 1 || role_id === 2) {
@@ -50,7 +61,7 @@ const getAllOrders = async (user_id, role_id) => {
         GROUP BY o.id, c.email
         ORDER BY o.inserted_at DESC;`;
       const list = await runMysqlQueryWithParam(sql, params);
-      return { status: true, msg: "Order list fetched successfully", responseObj: list };
+      return { status: true, msg: "Order list fetched successfully", responseObj: attachReceiptUrls(list) };
     } else {
       return { status: false, msg: "User Not Authorized" };
     }
@@ -106,7 +117,7 @@ const getAllOrdersByFranchise = async (user_id, role_id, franchiseId) => {
         GROUP BY o.id, c.email
         ORDER BY o.inserted_at DESC;`;
       const list = await runMysqlQueryWithParam(sql, params);
-      return { status: true, msg: "Order list fetched successfully", responseObj: list };
+      return { status: true, msg: "Order list fetched successfully", responseObj: attachReceiptUrls(list) };
     } else {
       return { status: false, msg: "User Not Authorized" };
     }
@@ -191,6 +202,9 @@ const getOrderOnID = async (user_id, role_id, id) => {
         const listSql = `SELECT o.*,pp.delevery_days, p.name FROM tbl_order_details as o left join tbl_product_price pp on pp.product_id=o.product_id and pp.user_id=${orders[0].franchise_id} LEFT JOIN tbl_products p ON o.product_id=p.id WHERE o.order_id=?`;
         const list = await runMysqlQueryWithParam(listSql, [orders[0].id]);
         orderList = { ...orders[0], itemList: list };
+      }
+      if (orderList.id) {
+        orderList.receipt_url = buildReceiptUrl(orderList.id);
       }
       return { status: true, msg: "Order details fetched successfully", responseObj: orderList };
     } else {
