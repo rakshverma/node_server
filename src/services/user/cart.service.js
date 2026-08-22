@@ -7,7 +7,7 @@ const addCartDetails = async (data) => {
     await runMysqlQueryWithParam(sql, [cartId, userId, productId, franchiseId, quantity, unit, price, shippingCost, count]);
     return { status: true, msg: "cart details added successfully", responseObj: [] };
   } catch (e) {
-    return { status: false, msg: "something went wrong", responseObj: [] };
+    return { status: false, msg: "Unable to add cart item. Please try again", responseObj: [] };
   }
 };
 
@@ -18,7 +18,7 @@ const updateCartDetails = async (data) => {
     await runMysqlQueryWithParam(sql, [count, cartId, productId, quantity, unit]);
     return { status: true, msg: "cart details added successfully", responseObj: [] };
   } catch (e) {
-    return { status: false, msg: "something went wrong", responseObj: [] };
+    return { status: false, msg: "Unable to update cart item. Please try again", responseObj: [] };
   }
 };
 

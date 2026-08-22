@@ -28,7 +28,7 @@ const validateAddProducts = async (data, fileNames) => {
   } catch (e) {
     return {
       status: false,
-      msg: "Something went wrong. Please try again",
+      msg: "Please try again",
       responseObj: {},
     };
   }
@@ -58,7 +58,7 @@ const addProduct = async (data, files) => {
   } catch (e) {
     return {
       status: false,
-      msg: "Something went wrong. Please try again",
+      msg: "Please try again",
       responseObj: {},
     };
   }
@@ -100,7 +100,7 @@ const editProduct = async (data, files, productId) => {
     console.log(e);
     return {
       status: false,
-      msg: "Something went wrong. Please try again",
+      msg: "Please try again",
       responseObj: {},
     };
   }
@@ -202,7 +202,7 @@ ON p.id = pp.product_id WHERE p.id=?`;
     const franchiseInfo = await runMysqlQueryWithParam(franchiseSql, [distributerId]);
     return { status: true, msg: "", responseObj: { editInfo: productPrice[0], franchiseInfo: franchiseInfo[0] } };
   } catch (e) {
-    return { status: false, msg: "Something went wrong." };
+    return { status: false, msg: "Please try again." };
   }
 };
 
@@ -300,7 +300,7 @@ const updateProductPrice = async (info) => {
     else return { status: false, msg: "Unable to update price info. Please try again." };
   } catch (e) {
     console.log(e);
-    return { status: false, msg: "Something went wrong. Please try again." };
+    return { status: false, msg: "Please try again." };
   }
 };
 
@@ -321,7 +321,7 @@ const getProductReviews = async (role_id) => {
     }
   } catch (e) {
     console.log(e);
-    return { status: false, msg: "Something went wrong. Please try again." };
+    return { status: false, msg: "Please try again." };
   }
 };
 
@@ -332,7 +332,7 @@ const updateProductStatus = async (productId, status) => {
     return { status: true, msg: "Product status updated successfully", responseObj: {} };
   } catch (e) {
     console.log(e);
-    return { status: false, msg: "Something went wrong. Please try again.", responseObj: {} };
+    return { status: false, msg: "Please try again.", responseObj: {} };
   }
 };
 
@@ -347,7 +347,7 @@ const deleteReviews = async (id, role_id, user_id) => {
     }
   } catch (e) {
     console.log(e);
-    return { status: false, msg: "Something went wrong. Please try again.", responseObj: {} };
+    return { status: false, msg: "Please try again.", responseObj: {} };
   }
 };
 

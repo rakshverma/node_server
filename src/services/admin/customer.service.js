@@ -11,7 +11,7 @@ const getAllCustomers = async (user_id, role_id) => {
     }
   } catch (e) {
     console.log(e);
-    return { status: false, msg: "Something went wrong. Please try again." };
+    return { status: false, msg: "Please try again." };
   }
 };
 

@@ -10,13 +10,28 @@ const {
   rollback,
 } = require("../../config/mysqlConfig");
 
+function parseJsonArray(value) {
+  if (!value) return [];
+  if (Array.isArray(value)) return value;
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function stringifyJsonArray(value) {
+  return JSON.stringify(parseJsonArray(value));
+}
+
 const getFranchiseList = async (user_id, role_id) => {
   try {
     if (role_id === 1) {
       const sql = `SELECT u.name, u.status, u.email, u.phone_number, u.inserted_at, u.modified_at, f.*
                          FROM tbl_users u
                          LEFT JOIN tbl_franchise_details f 
-                         ON u.id = f.user_id where u.status!=3 and u.status!=4 and u.role_id=2 order by id desc`;
+                         ON u.id = f.user_id where u.status!=3 and u.status!=4 and u.role_id=2 order by u.id desc`;
       const select = await runMysqlQuery(sql);
       return { status: true, msg: "", responseObj: select };
     } else {
@@ -24,7 +39,7 @@ const getFranchiseList = async (user_id, role_id) => {
     }
   } catch (e) {
     console.log(e);
-    return { status: false, msg: "Something went wrong" };
+    return { status: false, msg: "Please try again" };
   }
 };
 
@@ -48,7 +63,7 @@ const getPinCodeList = async (district) => {
     let addedZips = [];
     if (checkList.length) {
       checkList.forEach((item) => {
-        addedZips = item.zip_codes && [...addedZips, ...JSON.parse(item.zip_codes)];
+        addedZips = [...addedZips, ...parseJsonArray(item.zip_codes)];
       });
     }
     const zipCodesList = list.filter((obj) => addedZips.indexOf(obj.pin_code) === -1);
@@ -102,7 +117,7 @@ const addFranchise = async (data, user_id, role_id) => {
           franchiseName.trim(),
           state,
           district,
-          zipCodes,
+          stringifyJsonArray(zipCodes),
         ]);
         await commit(connection);
         connection.release();
@@ -133,7 +148,7 @@ const editFranchise = async (data, user_id, role_id) => {
                         ON
                         u.id = f.user_id
                         WHERE u.id != ? AND u.role_id = 2 AND
-                        (u.email=? OR f.franchise_name=?)`;
+                        (u.email=? OR u.phone_number=? OR f.franchise_name=?)`;
       const check = await runMysqlQueryWithParam(checkSql, [editId, email, phone, franchiseName]);
       console.log("check = ", check);
       console.log("editId = ", editId, email, phone, franchiseName);
@@ -153,7 +168,7 @@ const editFranchise = async (data, user_id, role_id) => {
         const insertUser = await runTransectionQuery(connection, insertUserSql, [name.trim(), email.trim(), phone, status, editId]);
         const insertId = insertUser.insertId;
         const franchiseSql = "update tbl_franchise_details set franchise_name=?, state=?, district=?, zip_codes=? where user_id=?";
-        let newZipCodes = zipCodes;
+        let newZipCodes = stringifyJsonArray(zipCodes);
         if (status == 0) {
           newZipCodes = JSON.stringify([]);
         }
@@ -193,7 +208,7 @@ const getAllRequest = async (role_id) => {
       return { status: false, msg: "Permission denied to add franchise", responseObj: {} };
     }
   } catch (e) {
-    return { status: true, msg: "Unable to fetch request list.", responseObj: list };
+    return { status: false, msg: "Unable to fetch request list.", responseObj: [] };
   }
 };
 
@@ -220,7 +235,7 @@ const getAllFranchiseOnRole = async (role_id, user_id) => {
     }
   } catch (e) {
     console.log(e);
-    return { status: false, msg: "Something went wrong" };
+    return { status: false, msg: "Please try again" };
   }
 };
 
@@ -232,7 +247,7 @@ const getShippingCostListOnId = async (franchiseId, role_id, user_id) => {
     const sql = `select zip_codes from tbl_franchise_details where user_id=?`;
     const result = await runMysqlQueryWithParam(sql, [franchiseId]);
     if (result.length) {
-      const zipList = JSON.parse(result[0].zip_codes);
+      const zipList = parseJsonArray(result[0].zip_codes);
       const shipSql = `select user_id, pin_code, shipping_cost from tbl_shipping_cost where user_id=?`;
       const shipList = await runMysqlQueryWithParam(shipSql, [franchiseId]);
       const list = [];
@@ -255,7 +270,7 @@ const getShippingCostListOnId = async (franchiseId, role_id, user_id) => {
       return { status: true, msg: "shipping list fetched successfully", responseObj: [] };
     }
   } catch (e) {
-    return { status: false, msg: "Something went wrong" };
+    return { status: false, msg: "Please try again" };
   }
 };
 
@@ -275,7 +290,7 @@ const updateShippingCostListOnId = async (formData, franchiseId, role_id, user_i
     return { status: true, msg: "shipping cost updated successfully", responseObj: {} };
   } catch (e) {
     console.log("ERROR -= ", e);
-    return { status: false, msg: "Something went wrong" };
+    return { status: false, msg: "Please try again" };
   }
 };
 
@@ -295,14 +310,14 @@ const getFranchiseDetailsOnId = async (franchiseId, role_id, user_id) => {
     let addedZips = [];
     if (checkList.length) {
       checkList.forEach((item) => {
-        addedZips = item.zip_codes && [...addedZips, ...JSON.parse(item.zip_codes)];
+        addedZips = [...addedZips, ...parseJsonArray(item.zip_codes)];
       });
     }
     const zipCodesList = list.filter((obj) => addedZips.indexOf(obj.pin_code) === -1);
     return { status: true, msg: "franchise details successfully", responseObj: { franchiseDetails: response[0], pinCodeList: zipCodesList } };
   } catch (e) {
     console.log("ERROR -= ", e);
-    return { status: false, msg: "Something went wrong" };
+    return { status: false, msg: "Please try again" };
   }
 };
 
@@ -318,7 +333,7 @@ const deleteFranchise = async (franchiseId, role_id, user_id) => {
       return { status: false, msg: "Permission denied to delete franchise details", responseObj: [] };
     }
   } catch (e) {
-    return { status: false, msg: "Something went wrong" };
+    return { status: false, msg: "Please try again" };
   }
 };
 

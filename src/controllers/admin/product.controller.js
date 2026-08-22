@@ -16,7 +16,7 @@ const addProduct = async (req, res) => {
       else return response.send(res, save.statusCode || 500, 0, save.msg, {});
     }
   } catch (e) {
-    response.send(res, 500, 0, "Something went wrong. Please try again.", {});
+    response.send(res, 500, 0, "Please try again.", {});
   }
 };
 
@@ -32,7 +32,7 @@ const editProduct = async (req, res) => {
     if (save.status) return response.send(res, 200, 1, save.msg, {});
     else return response.send(res, save.statusCode || 500, 0, save.msg, {});
   } catch (e) {
-    response.send(res, 500, 0, "Something went wrong. Please try again.", {});
+    response.send(res, 500, 0, "Please try again.", {});
   }
 };
 
@@ -70,7 +70,7 @@ const priceeditinfo = async (req, res) => {
 const getProductPriceOnFranchise = async (req, res) => {
   const { distributerId } = req.params;
   const { user_id, role_id } = req;
-  if (!distributerId) return response.send(res, 400, 0, "Something went wrong.", {});
+  if (!distributerId) return response.send(res, 400, 0, "Please try again.", {});
   const productList = await productService.getProductPriceOnFranchise(distributerId);
   if (productList.status) response.send(res, 200, 1, "", productList.responseObj);
   else return response.send(res, 500, 0, productList.msg, {});

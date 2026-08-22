@@ -13,6 +13,21 @@ const getUserMsg = async () => {
   return "no user found";
 };
 
+function parseJsonArray(value) {
+  if (!value) return [];
+  if (Array.isArray(value)) return value;
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function stringifyJsonArray(value) {
+  return JSON.stringify(parseJsonArray(value));
+}
+
 const getCurrentUser = async (userId, roleId) => {
   try {
     let sql = `SELECT u.*, f.state, f.district, f.zip_codes FROM tbl_users u LEFT JOIN tbl_franchise_details f on u.id=f.user_id WHERE u.id = ?`;
@@ -37,7 +52,7 @@ const getCurrentUser = async (userId, roleId) => {
     }
   } catch (e) {
     console.log(e);
-    return { status: false, msg: "Something went wrong. Please try again" };
+    return { status: false, msg: "Please try again" };
   }
 };
 
@@ -52,7 +67,7 @@ const getPinCodeOnUser = async (user_id, role_id, district) => {
       let addedZips = [];
       if (checkList.length) {
         checkList.forEach((item) => {
-          addedZips = item.zip_codes && [...addedZips, ...JSON.parse(item.zip_codes)];
+          addedZips = [...addedZips, ...parseJsonArray(item.zip_codes)];
         });
       }
       const zipCodesList = list.filter((obj) => addedZips.indexOf(obj.pin_code) === -1);
@@ -98,30 +113,26 @@ const editProfile = async (data, user_id, role_id) => {
           const updateDetails = await runTransectionQuery(connection, detailsSql, [state, district, user_id]);
         } else {
           let detailsSql = `UPDATE tbl_franchise_details SET state=?, district=?, zip_codes=? WHERE user_id=?`;
-          let params = [state, district, zipCodes, user_id];
+          let params = [state, district, stringifyJsonArray(zipCodes), user_id];
           if (role_id === 2) {
             detailsSql = `UPDATE tbl_franchise_details SET franchise_name=?, state=?, district=?, zip_codes=? WHERE user_id=?`;
-            params = [franchiseName, state, district, zipCodes, user_id];
+            params = [franchiseName, state, district, stringifyJsonArray(zipCodes), user_id];
           }
           const updateDetails = await runTransectionQuery(connection, detailsSql, params);
         }
-        await commit(connection);
-        connection.release();
       } else {
         if (role_id === 3) {
           const detailsSql = `INSERT INTO tbl_delevery_boy_details SET user_id=?, state=?, district=?`;
           const insertDetails = await runTransectionQuery(connection, detailsSql, [user_id, state, district]);
         } else {
           let detailsSql = `INSERT INTO tbl_franchise_details SET user_id=?, state=?, district=?, zip_codes=?`;
-          let params = [user_id, state, district, zipCodes];
+          let params = [user_id, state, district, stringifyJsonArray(zipCodes)];
           if (role_id === 2) {
             detailsSql = `INSERT INTO tbl_franchise_details SET user_id=?, franchise_name=?, state=?, district=?, zip_codes=?`;
-            params = [user_id, franchiseName, state, district, zipCodes];
+            params = [user_id, franchiseName, state, district, stringifyJsonArray(zipCodes)];
           }
           const insertDetails = await runTransectionQuery(connection, detailsSql, params);
         }
-        await commit(connection);
-        connection.release();
       }
       await commit(connection);
       connection.release();
@@ -134,7 +145,7 @@ const editProfile = async (data, user_id, role_id) => {
     }
   } catch (e) {
     console.log("User Profile error = ", e);
-    return { status: false, msg: "Something went wrong. Please try again.", responseObj: {} };
+    return { status: false, msg: "Please try again.", responseObj: {} };
   }
 };
 
@@ -151,7 +162,7 @@ const changePassword = async (data, user_id, role_id) => {
     return { status: true, msg: "Password updated successfully.", responseObj: {} };
   } catch (e) {
     console.log("change password error = ", e);
-    return { status: false, msg: "Something went wrong. Please try again.", responseObj: {} };
+    return { status: false, msg: "Please try again.", responseObj: {} };
   }
 };
 

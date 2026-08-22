@@ -82,7 +82,7 @@ const doLogin = async (postData) => {
     } else return { status: false, statusCode: 401, msg: "Credentials did not match with any user or user is inactive.Please contact admin." };
   } catch (e) {
     console.log(e);
-    return { status: false, statusCode: 500, msg: "Something went wrong. Please try again." };
+    return { status: false, statusCode: 500, msg: "Please try again." };
   }
 };
 

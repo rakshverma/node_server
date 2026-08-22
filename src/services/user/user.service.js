@@ -30,7 +30,7 @@ const getCurrentUser = async (userId, roleId) => {
       return { status: false, msg: "User not authorized", responseObj: {} };
     }
   } catch (e) {
-    return { status: false, msg: "Something went wrong. Please try again", responseObj: {} };
+    return { status: false, msg: "Please try again", responseObj: {} };
   }
 };
 
@@ -52,7 +52,7 @@ const getUserDistrict = async (pincode) => {
       };
     }
   } catch (e) {
-    return { status: false, msg: "Something went wrong. Please try again", responseObj: {} };
+    return { status: false, msg: "Please try again", responseObj: {} };
   }
 };
 

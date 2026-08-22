@@ -69,13 +69,13 @@ const register = async (data) => {
     } catch (e) {
       console.log(e);
       await rollback(connection);
-      return { status: false, statusCode: 500, msg: "Something went wrong. Please try again.", responseObj: {} };
+      return { status: false, statusCode: 500, msg: "Please try again.", responseObj: {} };
     } finally {
       connection.release();
     }
   } catch (e) {
     console.log(e);
-    return { status: false, statusCode: 500, msg: "Something went wrong. Please try again.", responseObj: {} };
+    return { status: false, statusCode: 500, msg: "Please try again.", responseObj: {} };
   }
 };
 
@@ -97,7 +97,7 @@ const validateLogin = async (email, password) => {
     if (!password || (password && password.length < 6)) return { status: false, msg: "Password should be minimum 6 characters", responseObj: {} };
     else return { status: true };
   } catch (e) {
-    return { status: false, msg: "Something went wrong. Pleae try again", responseObj: {} };
+    return { status: false, msg: "Please try again", responseObj: {} };
   }
 };
 
@@ -106,7 +106,7 @@ const validateForgotPassword = async (email) => {
     if (!email || (email && !validEmail(email))) return { status: false, msg: "Email is not valid", responseObj: {} };
     else return { status: true };
   } catch (e) {
-    return { status: false, msg: "Something went wrong. Pleae try again", responseObj: {} };
+    return { status: false, msg: "Please try again", responseObj: {} };
   }
 };
 
@@ -141,7 +141,7 @@ const doLogin = async (emailId, password) => {
     return { status: true, msg: "User loggedin successfully", responseObj: user };
   } catch (e) {
     console.log(e);
-    return { status: false, statusCode: 500, msg: "Something went wrong. Please try again", responseObj: {} };
+    return { status: false, statusCode: 500, msg: "Please try again", responseObj: {} };
   }
 };
 
@@ -172,7 +172,7 @@ const doForgotPassword = async (email) => {
     await sendEmail(email?.toLowerCase()?.trim(), subject, bodyHtml);
     return { status: true, msg: "Password successfully sent to your email id.", responseObj: {} };
   } catch (e) {
-    return { status: false, msg: "Something went wrong. Please try again", responseObj: {} };
+    return { status: false, msg: "Please try again", responseObj: {} };
   }
 };
 

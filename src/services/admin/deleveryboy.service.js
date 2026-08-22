@@ -35,7 +35,7 @@ const getAllDeleveryBoyList = async (user_id, role_id) => {
     }
   } catch (e) {
     console.log(e);
-    return { status: false, msg: "Something went wrong" };
+    return { status: false, msg: "Please try again" };
   }
 };
 
@@ -91,7 +91,7 @@ const addDeleveryBoy = async (data, user_id, role_id) => {
     }
   } catch (e) {
     console.log("deliveryboy error = ", e);
-    return { status: false, msg: "Something went wrong. Please try again.", responseObj: {} };
+    return { status: false, msg: "Please try again.", responseObj: {} };
   }
 };
 
@@ -140,7 +140,7 @@ const editDeleveryBoy = async (data, editId, user_id, role_id) => {
       return { status: false, msg: "Permission denied to update delivery boy", responseObj: {} };
     }
   } catch (e) {
-    return { status: false, msg: "Something went wrong. Please try again.", responseObj: {} };
+    return { status: false, msg: "Please try again.", responseObj: {} };
   }
 };
 
@@ -221,7 +221,7 @@ const deleteDeliveryBoy = async (id, role_id, user_id) => {
       return { status: false, msg: "Permission denied to delete delevery boy details", responseObj: [] };
     }
   } catch (e) {
-    return { status: false, msg: "Something went wrong" };
+    return { status: false, msg: "Please try again" };
   }
 };
 

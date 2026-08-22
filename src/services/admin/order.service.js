@@ -56,7 +56,7 @@ const getAllOrders = async (user_id, role_id) => {
     }
   } catch (e) {
     console.log(e);
-    return { status: false, msg: "Something went wrong" };
+    return { status: false, msg: "Please try again" };
   }
 };
 
@@ -112,7 +112,7 @@ const getAllOrdersByFranchise = async (user_id, role_id, franchiseId) => {
     }
   } catch (e) {
     console.log(e);
-    return { status: false, msg: "Something went wrong" };
+    return { status: false, msg: "Please try again" };
   }
 };
 
@@ -130,7 +130,7 @@ const getDeleveryboyListOnFranchise = async (user_id, role_id, franchiseId) => {
     return { status: true, msg: "delevery boy list fetched successfully on franchise", responseObj: list };
   } catch (e) {
     console.log(e);
-    return { status: false, msg: "Something went wrong" };
+    return { status: false, msg: "Please try again" };
   }
 };
 
@@ -160,7 +160,7 @@ const validateUpdatingOrder = async (data) => {
     }
   } catch (e) {
     console.log(e);
-    return { status: false, msg: "Something went wrong. Please try again." };
+    return { status: false, msg: "Please try again." };
   }
 };
 
@@ -171,7 +171,7 @@ const updateDeleveryboyWithStatus = async ({ deleveryboyId, status, orderId }) =
     return { status: true, msg: "Order updated successfully" };
   } catch (e) {
     console.log(e);
-    return { status: false, msg: "Something went wrong. Please try again." };
+    return { status: false, msg: "Please try again." };
   }
 };
 
@@ -198,7 +198,7 @@ const getOrderOnID = async (user_id, role_id, id) => {
     }
   } catch (e) {
     console.log(e);
-    return { status: false, msg: "Something went wrong. Please try again." };
+    return { status: false, msg: "Please try again." };
   }
 };
 
@@ -257,7 +257,7 @@ const updateOrderDeliveryStatus = async (user_id, role_id, id, status) => {
     }
   } catch (e) {
     console.log(e);
-    return { status: false, msg: "Something went wrong. Please try again." };
+    return { status: false, msg: "Please try again." };
   }
 };
 
@@ -284,7 +284,7 @@ const getFranchiseListOnOrder = async (user_id, role_id, orderId) => {
     }
   } catch (e) {
     console.log(e);
-    return { status: false, msg: "Something went wrong. Please try again." };
+    return { status: false, msg: "Please try again." };
   }
 };
 
@@ -300,7 +300,7 @@ const updateDeliveryBoyOnOrder = async (user_id, role_id, boyId, orderId, orderD
     }
   } catch (e) {
     console.log(e);
-    return { status: false, msg: "Something went wrong. Please try again." };
+    return { status: false, msg: "Please try again." };
   }
 };
 
@@ -324,7 +324,7 @@ const cancelOrder = async (user_id, role_id, id) => {
     }
   } catch (e) {
     console.log(e);
-    return { status: false, msg: "Something went wrong. Please try again." };
+    return { status: false, msg: "Please try again." };
   }
 };
 
@@ -348,7 +348,7 @@ const cancelOrderItems = async (user_id, role_id, orderIds) => {
     }
   } catch (e) {
     console.log(e);
-    return { status: false, msg: "Something went wrong. Please try again." };
+    return { status: false, msg: "Please try again." };
   }
 };
 
@@ -416,7 +416,7 @@ const cancelOrderOnItemId = async (user_id, role_id, orderId, itemId, mainOrderC
     }
   } catch (e) {
     console.log(e);
-    return { status: false, msg: "Something went wrong. Please try again." };
+    return { status: false, msg: "Please try again." };
   }
 };
 
@@ -440,7 +440,7 @@ const completeOrderItems = async (user_id, role_id, orderIds) => {
     }
   } catch (e) {
     console.log(e);
-    return { status: false, msg: "Something went wrong. Please try again." };
+    return { status: false, msg: "Please try again." };
   }
 };
 
@@ -462,7 +462,7 @@ const updateAdminNotes = async (user_id, role_id, orderId, adminNotes) => {
     }
   } catch (e) {
     console.log(e);
-    return { status: false, msg: "Something went wrong. Please try again." };
+    return { status: false, msg: "Please try again." };
   }
 };
 
@@ -484,7 +484,7 @@ const updateDeliveryDate = async (user_id, role_id, id, itemId, date) => {
     }
   } catch (e) {
     console.log(e);
-    return { status: false, msg: "Something went wrong. Please try again." };
+    return { status: false, msg: "Please try again." };
   }
 };
 

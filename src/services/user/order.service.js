@@ -4,7 +4,7 @@ const moment = require("moment");
 const sendEmail = require("../../utils/emailUtility");
 const config = require("../../config").get(process.env.ENV);
 const { generateInvoice, convertHtmlToPdfBuffer } = require("./../../utils/generateInvoice");
-const { uploadBuffer, getPublicUrl } = require("../../utils/supabaseStorage");
+const { uploadBuffer, createSignedUrl } = require("../../utils/supabaseStorage");
 const {
   runMysqlQuery,
   runMysqlQueryWithParam,
@@ -130,7 +130,7 @@ const addOrderDetails = async (formData, cartId, deliveryDates, existingUserId, 
         order = await runTransectionQuery(connection, orderSql, [userId, ...orderArr]);
       }
 
-      let orderId = order.insertId;
+      let orderId = Number(order.insertId);
       let refId = 1000 + orderId;
       let refSql = `UPDATE tbl_orders SET ref_no=? WHERE id=?`;
       await runTransectionQuery(connection, refSql, [`JB${refId}`, orderId]);
@@ -382,7 +382,7 @@ async function createOrderReceipt(connection, orderArr, cartInfo, orderId, email
   return {
     fileName: invoiceFileName,
     storagePath,
-    publicUrl: getPublicUrl(storagePath),
+    publicUrl: await createSignedUrl(storagePath),
     pdfBuffer,
   };
 }

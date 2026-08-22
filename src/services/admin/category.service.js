@@ -28,7 +28,7 @@ const addCategory = async (category) => {
       };
     }
   } catch (e) {
-    return { status: false, msg: "Something went wrong. Please try again" };
+    return { status: false, msg: "Please try again" };
   }
 };
 
@@ -57,7 +57,7 @@ const editCategory = async (category, id) => {
       };
     }
   } catch (e) {
-    return { status: false, msg: "Something went wrong. Please try again" };
+    return { status: false, msg: "Please try again" };
   }
 };
 
@@ -83,7 +83,7 @@ const deleteCategory = async (id) => {
   if (!id)
     return {
       status: false,
-      msg: "Something went wrong. Please try again.",
+      msg: "Please try again.",
       responseObj: [],
     };
   try {
@@ -107,7 +107,7 @@ const deleteCategory = async (id) => {
   } catch (e) {
     return {
       status: false,
-      msg: "Something went wrong. Please try again.",
+      msg: "Please try again.",
       responseObj: [],
     };
   }
