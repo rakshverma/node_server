@@ -44,18 +44,21 @@ const getAllOrders = async (user_id, role_id) => {
             o.additional_notes,
             c.email,
             (select franchise_name from tbl_franchise_details where user_id=o.franchise_id) as franchise_name,
-            STRING_AGG(p.name::text, ',') AS product_names,
-            STRING_AGG(od.quantity::text, ',') AS quantity,
-            STRING_AGG(od.price::text, ',') AS price,
-            STRING_AGG(od.unit::text, ',') AS units,
-            STRING_AGG(od.count::text, ',') AS counts,
-            STRING_AGG(od.delivery_status::text, ',') AS delivery_status,
-            STRING_AGG(od.delivery_date::text, ',') AS delivery_date
+            STRING_AGG(p.name::text, ',' ORDER BY od.id) AS product_names,
+            STRING_AGG(od.quantity::text, ',' ORDER BY od.id) AS quantity,
+            STRING_AGG(od.price::text, ',' ORDER BY od.id) AS price,
+            STRING_AGG(od.unit::text, ',' ORDER BY od.id) AS units,
+            STRING_AGG(od.count::text, ',' ORDER BY od.id) AS counts,
+            STRING_AGG(od.delivery_status::text, ',' ORDER BY od.id) AS delivery_status,
+            STRING_AGG(od.delivery_date::text, ',' ORDER BY od.id) AS delivery_date,
+            STRING_AGG(COALESCE(od.delivery_boy_id::text, ''), ',' ORDER BY od.id) AS delivery_boy_ids,
+            STRING_AGG(COALESCE(db.name, '')::text, ',' ORDER BY od.id) AS delivery_boy_names
         FROM tbl_orders o
         INNER JOIN tbl_franchise_details f ON o.franchise_id = f.user_id
-        INNER JOIN tbl_users c ON o.user_id = c.id
+        LEFT JOIN tbl_users c ON o.user_id = c.id
         INNER JOIN tbl_order_details od ON o.id = od.order_id
         INNER JOIN tbl_products p ON od.product_id = p.id 
+        LEFT JOIN tbl_users db ON od.delivery_boy_id = db.id
        
         ${whereClause} 
         GROUP BY o.id, c.email
@@ -100,18 +103,21 @@ const getAllOrdersByFranchise = async (user_id, role_id, franchiseId) => {
             o.shipping_cost,
             c.email,
             (select franchise_name from tbl_franchise_details where user_id=o.franchise_id) as franchise_name,
-            STRING_AGG(p.name::text, ',') AS product_names,
-            STRING_AGG(od.quantity::text, ',') AS quantity,
-            STRING_AGG(od.price::text, ',') AS price,
-            STRING_AGG(od.unit::text, ',') AS units,
-            STRING_AGG(od.count::text, ',') AS counts,
-            STRING_AGG(od.delivery_status::text, ',') AS delivery_status,
-            STRING_AGG(od.delivery_date::text, ',') AS delivery_date
+            STRING_AGG(p.name::text, ',' ORDER BY od.id) AS product_names,
+            STRING_AGG(od.quantity::text, ',' ORDER BY od.id) AS quantity,
+            STRING_AGG(od.price::text, ',' ORDER BY od.id) AS price,
+            STRING_AGG(od.unit::text, ',' ORDER BY od.id) AS units,
+            STRING_AGG(od.count::text, ',' ORDER BY od.id) AS counts,
+            STRING_AGG(od.delivery_status::text, ',' ORDER BY od.id) AS delivery_status,
+            STRING_AGG(od.delivery_date::text, ',' ORDER BY od.id) AS delivery_date,
+            STRING_AGG(COALESCE(od.delivery_boy_id::text, ''), ',' ORDER BY od.id) AS delivery_boy_ids,
+            STRING_AGG(COALESCE(db.name, '')::text, ',' ORDER BY od.id) AS delivery_boy_names
         FROM tbl_orders o
         INNER JOIN tbl_franchise_details f ON o.franchise_id = f.user_id
-        INNER JOIN tbl_users c ON o.user_id = c.id
+        LEFT JOIN tbl_users c ON o.user_id = c.id
         INNER JOIN tbl_order_details od ON o.id = od.order_id
         INNER JOIN tbl_products p ON od.product_id = p.id 
+        LEFT JOIN tbl_users db ON od.delivery_boy_id = db.id
        
         ${whereClause} 
         GROUP BY o.id, c.email

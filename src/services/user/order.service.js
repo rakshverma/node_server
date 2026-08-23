@@ -177,16 +177,17 @@ const addOrderDetails = async (formData, cartId, deliveryDates, existingUserId, 
       ];
       const userDataArr = [formData.street, formData.district, formData.state, formData.landmark, formData.pincode];
 
-      let userWhereClause = `WHERE u.email=? AND u.role_id=4`;
+      let userCheck = [];
       if (existingUserId) {
         userId = existingUserId;
-        userWhereClause = `WHERE u.id=?`;
+        const usercheckSql = `SELECT u.id,u.email,u.phone_number,u.name,u.status,ud.pin_code FROM tbl_users u LEFT JOIN tbl_user_details ud ON u.id=ud.user_id WHERE u.id=?`;
+        userCheck = await runMysqlQueryWithParam(usercheckSql, [userId]);
+        if (!userCheck.length) {
+          return { status: false, msg: "Unable to place order. Please login again.", responseObj: {} };
+        }
       }
-      const userParams = userId || formData?.email.trim().toLowerCase();
-      const usercheckSql = `SELECT u.id,u.email,u.phone_number,u.name,u.status,ud.pin_code FROM tbl_users u LEFT JOIN tbl_user_details ud ON u.id=ud.user_id ${userWhereClause}`;
-      const userCheck = await runMysqlQueryWithParam(usercheckSql, [userParams]);
       await beginTransaction(connection);
-      if (userCheck.length) {
+      if (existingUserId && userCheck.length) {
         let orderSql = `INSERT INTO tbl_orders 
                     (user_id, franchise_id, total_price, shipping_address, billing_address, name, state, district, additional_notes,delivery_date, phone_number, pin_code, landmark, shipping_cost)
                     VALUES 
@@ -208,14 +209,7 @@ const addOrderDetails = async (formData, cartId, deliveryDates, existingUserId, 
           await runTransectionQuery(connection, userDataSql, userParams);
         }
       } else {
-        const email = formData.email.trim().toLowerCase();
-        const password = "test123"; //generatePassword();
-        const hashedPassword = bcrypt.hashSync(password, config.saltRounds);
-        const userSql = `INSERT INTO tbl_users (role_id, email, password, name, phone_number) VALUES (?,?,?,?,?)`;
-        const userDataSql = `INSERT INTO tbl_user_details (user_id, street, district, state, landmark, pin_code) VALUES (?,?,?,?,?,?)`;
-        const userInsert = await runTransectionQuery(connection, userSql, [4, email, hashedPassword, formData.name, formData.phone]);
-        userId = userInsert.insertId;
-        await runTransectionQuery(connection, userDataSql, [userId, ...userDataArr]);
+        userId = 0;
         let orderSql = `INSERT INTO tbl_orders 
                     (user_id, franchise_id, total_price, shipping_address, billing_address, name, state, district, additional_notes,delivery_date, phone_number, pin_code, landmark, shipping_cost)
                     VALUES 
@@ -243,28 +237,6 @@ const addOrderDetails = async (formData, cartId, deliveryDates, existingUserId, 
       const receipt = await createOrderReceipt(connection, orderArr, cartInfo, orderId, formData.email, deliveryDates);
 
       let user = {};
-      if (!existingUserId && !userCheck.length) {
-        const token = jwt.sign({ id: userId, role_id: 4 }, config.jwt.secret, {
-          expiresIn: config.jwt.token_life,
-        });
-        const refreshToken = jwt.sign({ id: userId, role_id: 4 }, config.jwt.refresh_secret, {
-          expiresIn: config.jwt.refresh_token_life,
-        });
-        user = {
-          id: userId,
-          email: formData.email.trim().toLowerCase(),
-          name: formData.name,
-          phone_number: formData.phone,
-          status: 1,
-          token,
-          refreshToken,
-          street: formData.street,
-          district: formData.district,
-          state: formData.state,
-          landmark: formData.landmark,
-          pin_code: formData.pincode,
-        };
-      }
       console.log("userCheck = ", userCheck);
       console.log("existingUserId = ", existingUserId);
       if (existingUserId && userCheck[0].pin_code != formData.pincode) {
