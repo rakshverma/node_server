@@ -88,6 +88,13 @@ const completeOrderItems = async (req, res) => {
   else return response.send(res, 500, 0, list.msg, {});
 };
 
+const processOrderItems = async (req, res) => {
+  const { user_id, role_id } = req;
+  const list = await orderService.processOrderItems(user_id, role_id, req.body);
+  if (list.status) return response.send(res, 200, 1, list.msg, list.responseObj);
+  else return response.send(res, 500, 0, list.msg, {});
+};
+
 const cancelOrderOnItemId = async (req, res) => {
   const { user_id, role_id } = req;
   const { orderId, itemId, mainOrderCancel } = req.body;
@@ -125,6 +132,7 @@ module.exports = {
   cancelOrderItems,
   cancelOrderOnItemId,
   completeOrderItems,
+  processOrderItems,
   updateAdminNotes,
   updateDeliveryDate,
 };

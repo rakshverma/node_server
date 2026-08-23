@@ -15,6 +15,7 @@ router.put("/cancelOrder/:id", verifyToken, orderController.cancelOrder);
 router.put("/cancelOrders", verifyToken, orderController.cancelOrderItems);
 router.put("/cancelOrderOnItemId", verifyToken, orderController.cancelOrderOnItemId);
 router.put("/completeOrderItems", verifyToken, orderController.completeOrderItems);
+router.put("/processOrderItems", verifyToken, orderController.processOrderItems);
 router.put("/updateAdminNotes", verifyToken, orderController.updateAdminNotes);
 router.put("/updateDeliveryDate", verifyToken, orderController.updateDeliveryDate);
 

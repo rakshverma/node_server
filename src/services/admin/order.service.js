@@ -448,7 +448,31 @@ const completeOrderItems = async (user_id, role_id, orderIds) => {
       const detailSql = `update tbl_order_details set delivery_status=3, delivery_boy_id=NULL where order_id in (?) and delivery_status!=4`;
       await runMysqlQueryWithParam(sql, [orderIds]);
       await runMysqlQueryWithParam(detailSql, [orderIds]);
-      return { status: true, msg: "Orders canceled successfully", responseObj: {} };
+      return { status: true, msg: "Orders completed successfully", responseObj: {} };
+    } else {
+      return { status: false, msg: "User not authorized to update." };
+    }
+  } catch (e) {
+    console.log(e);
+    return { status: false, msg: "Please try again." };
+  }
+};
+
+const processOrderItems = async (user_id, role_id, orderIds) => {
+  try {
+    if (role_id === 1 || role_id === 2) {
+      if (role_id === 2) {
+        const checkSql = `select franchise_id from tbl_orders where id in (?) and franchise_id!=?`;
+        const check = await runMysqlQueryWithParam(checkSql, [orderIds, user_id]);
+        if (check.length) {
+          return { status: false, msg: "User not authorized to process few of the orders." };
+        }
+      }
+      const sql = `update tbl_orders set status=1, delevery_boy_id=NULL where id in (?)`;
+      const detailSql = `update tbl_order_details set delivery_status=1, delivery_boy_id=NULL where order_id in (?)`;
+      await runMysqlQueryWithParam(sql, [orderIds]);
+      await runMysqlQueryWithParam(detailSql, [orderIds]);
+      return { status: true, msg: "Orders moved to processing successfully", responseObj: {} };
     } else {
       return { status: false, msg: "User not authorized to update." };
     }
@@ -516,6 +540,7 @@ module.exports = {
   cancelOrderItems,
   cancelOrderOnItemId,
   completeOrderItems,
+  processOrderItems,
   updateAdminNotes,
   updateDeliveryDate,
 };
