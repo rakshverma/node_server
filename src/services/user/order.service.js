@@ -69,6 +69,15 @@ function validateCartForPincode(cartInfo, pincode) {
   return [...new Set(unavailableNames)];
 }
 
+function validateSingleDeliveryDate(cartInfo, deliveryDates) {
+  const selectedDates = cartInfo
+    .map((item) => deliveryDates?.[item.productId])
+    .map((date) => `${date || ""}`.trim())
+    .filter(Boolean);
+
+  return selectedDates.length === cartInfo.length && new Set(selectedDates).size === 1;
+}
+
 async function updateStockAfterOrder(connection, cartInfo) {
   const groupedItems = cartInfo.reduce((groups, item) => {
     const key = `${item.productId}-${item.franchiseId}`;
@@ -146,6 +155,13 @@ const addOrderDetails = async (formData, cartId, deliveryDates, existingUserId, 
         status: false,
         msg: "Few cart items are no longer available for this pincode. Please remove them and try again.",
         responseObj: unavailableNames,
+      };
+    }
+    if (!validateSingleDeliveryDate(cartInfo, deliveryDates)) {
+      return {
+        status: false,
+        msg: "Please select one delivery date for the whole order. Place separate orders for separate delivery dates.",
+        responseObj: {},
       };
     }
     let subTotal = 0;

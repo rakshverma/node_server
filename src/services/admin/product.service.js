@@ -80,6 +80,12 @@ const addProduct = async (data, files) => {
 const editProduct = async (data, files, productId) => {
   try {
     const { name, category, description } = data;
+    let retainedImages = [];
+    try {
+      retainedImages = JSON.parse(data.retainedImages || "[]");
+    } catch (e) {
+      retainedImages = [];
+    }
     const existSql = "SELECT id FROM tbl_products WHERE name=? AND category_id=? AND id!=?";
     const check = await runMysqlQueryWithParam(existSql, [name.trim(), category, productId]);
     if (check.length)
@@ -91,17 +97,24 @@ const editProduct = async (data, files, productId) => {
       };
     const oldImagesSql = "SELECT images FROM tbl_products WHERE id=?";
     const oldImages = await runMysqlQueryWithParam(oldImagesSql, [productId]);
-    let sql = "UPDATE tbl_products set name=?, category_id=?, description=? WHERE id=?";
-    let params = [name, category, description, productId];
+    const oldImageList = oldImages?.[0]?.images ? JSON.parse(oldImages[0].images) : [];
     const fileNames = files.length ? await uploadFiles(files, "products") : [];
-    if (fileNames.length) {
-      sql = "UPDATE tbl_products set name=?, category_id=?, description=?, images=? WHERE id=?";
-      params = [name, category, description, JSON.stringify(fileNames), productId];
+    const finalImages = [...retainedImages, ...fileNames];
+    if (!finalImages.length) {
+      return {
+        status: false,
+        statusCode: 400,
+        msg: "Please keep or upload at least one product image.",
+        responseObj: {},
+      };
     }
+    let sql = "UPDATE tbl_products set name=?, category_id=?, description=?, images=? WHERE id=?";
+    let params = [name, category, description, JSON.stringify(finalImages), productId];
     await runMysqlQueryWithParam(sql, params);
     try {
-      if (fileNames.length && oldImages?.[0]?.images) {
-        await deleteFiles(JSON.parse(oldImages[0].images));
+      const removedImages = oldImageList.filter((image) => !finalImages.includes(image));
+      if (removedImages.length) {
+        await deleteFiles(removedImages);
       }
     } catch (e) {}
     return {
