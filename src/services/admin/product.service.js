@@ -278,7 +278,7 @@ const updateProductPrice = async (info) => {
       const shippingSql = `
         INSERT INTO tbl_shipping_cost (user_id, pin_code, shipping_cost)
         VALUES ?
-        ON DUPLICATE KEY UPDATE user_id = VALUES(user_id), shipping_cost = VALUES(shipping_cost)
+        ON CONFLICT (user_id, pin_code) DO NOTHING
       `;
       await runMysqlQueryWithParam(shippingSql, [shippingValues]);
     }

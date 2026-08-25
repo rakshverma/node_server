@@ -26,6 +26,10 @@ function parseJsonArray(value) {
   }
 }
 
+function normalizeUnit(unit) {
+  return `${unit || ""}`.trim().toLowerCase();
+}
+
 function buildReceiptUrl(orderId) {
   return `/uploads/invoices/${Number(orderId) + 1000}_invoice.pdf`;
 }
@@ -48,7 +52,7 @@ function validateCartForPincode(cartInfo, pincode) {
     const matchingPrice = priceRows.find((priceRow) => {
       return (
         Number(priceRow.quantity) === Number(item.quantity) &&
-        `${priceRow.unit}` === `${item.unit}` &&
+        normalizeUnit(priceRow.unit) === normalizeUnit(item.unit) &&
         Number(priceRow.price) === Number(item.price)
       );
     });
@@ -95,7 +99,7 @@ async function updateStockAfterOrder(connection, cartInfo) {
       updatedPriceRows = updatedPriceRows.map((priceRow) => {
         const isSelectedRow =
           Number(priceRow.quantity) === Number(item.quantity) &&
-          `${priceRow.unit}` === `${item.unit}` &&
+          normalizeUnit(priceRow.unit) === normalizeUnit(item.unit) &&
           Number(priceRow.price) === Number(item.price);
         const hasTrackedStock = priceRow.stock_count !== undefined && priceRow.stock_count !== null && `${priceRow.stock_count}` !== "";
 
