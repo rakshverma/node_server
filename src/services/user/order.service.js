@@ -247,7 +247,7 @@ const addOrderDetails = async (formData, cartId, deliveryDates, existingUserId, 
         item.productId,
         item.quantity,
         item.price,
-        item.unit,
+        normalizeUnit(item.unit),
         item.count,
         deliveryDates[item.productId] || "",
         originalShipping,
@@ -445,7 +445,7 @@ function getOrderProductHtml(cartInfo, deliveryDates, list) {
     <td className="text-start">
       <a href="shop-details.html">${name}</a>
       <p className="mb-0">
-        weight: ${quantity}${unit} x ${count}
+        quantity: ${quantity}${unit} x ${count}
       </p>
     </td>
     <td className="text-end">${delivery_date}</td>

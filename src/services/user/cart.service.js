@@ -1,10 +1,12 @@
 const { runMysqlQuery, runMysqlQueryWithParam } = require("../../config/mysqlConfig");
 
+const normalizeUnit = (unit) => `${unit || ""}`.trim().toLowerCase();
+
 const addCartDetails = async (data) => {
   try {
     const { cartId, userId, productId, franchiseId, quantity, unit, price, shippingCost, count } = data;
     const sql = `INSERT INTO tbl_cart (cartId, userId, productId, franchiseId, quantity, unit, price, shippingCost, count ) VALUES (?, ?, ?, ?, ?, ?, ?, ?,?)`;
-    await runMysqlQueryWithParam(sql, [cartId, userId, productId, franchiseId, quantity, unit, price, shippingCost, count]);
+    await runMysqlQueryWithParam(sql, [cartId, userId, productId, franchiseId, quantity, normalizeUnit(unit), price, shippingCost, count]);
     return { status: true, msg: "cart details added successfully", responseObj: [] };
   } catch (e) {
     return { status: false, msg: "Unable to add cart item. Please try again", responseObj: [] };
@@ -14,8 +16,8 @@ const addCartDetails = async (data) => {
 const updateCartDetails = async (data) => {
   try {
     const { cartId, userId, productId, quantity, unit, price, shippingCost, count } = data;
-    const sql = `UPDATE tbl_cart SET count=? WHERE cartId=? AND productId=? AND quantity=? AND unit=?`;
-    await runMysqlQueryWithParam(sql, [count, cartId, productId, quantity, unit]);
+    const sql = `UPDATE tbl_cart SET count=?, unit=? WHERE cartId=? AND productId=? AND quantity=? AND TRIM(LOWER(unit))=?`;
+    await runMysqlQueryWithParam(sql, [count, normalizeUnit(unit), cartId, productId, quantity, normalizeUnit(unit)]);
     return { status: true, msg: "cart details added successfully", responseObj: [] };
   } catch (e) {
     return { status: false, msg: "Unable to update cart item. Please try again", responseObj: [] };
@@ -78,8 +80,8 @@ const getCartProductDetails = async (cartId) => {
 const removeCartItem = async (cartId, body) => {
   try {
     const { productId, quantity, unit } = body;
-    const sql = `DELETE FROM tbl_cart WHERE cartId=? AND productId=? AND quantity=? AND unit=?`;
-    await runMysqlQueryWithParam(sql, [cartId, productId, quantity, unit]);
+    const sql = `DELETE FROM tbl_cart WHERE cartId=? AND productId=? AND quantity=? AND TRIM(LOWER(unit))=?`;
+    await runMysqlQueryWithParam(sql, [cartId, productId, quantity, normalizeUnit(unit)]);
     return { status: true, msg: "cart item removed successfully", responseObj: [] };
   } catch (e) {
     return { status: false, msg: "Unable to remove cart item, please try again.", responseObj: [] };

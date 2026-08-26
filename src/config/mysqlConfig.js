@@ -1,6 +1,16 @@
 const { Pool } = require("pg");
 const config = require("./index").get(process.env.ENV);
 
+const dbType = (process.env.DB_TYPE || config.db?.type || "sql").trim().toLowerCase();
+
+if (dbType === "nosql") {
+  throw new Error("DB_TYPE=nosql was configured with MONGODB_URI, but this backend's repositories still use the SQL adapter. Use DB_TYPE=sql until MongoDB repositories are implemented.");
+}
+
+if (dbType !== "sql") {
+  throw new Error(`Unsupported DB_TYPE "${dbType}". Supported value is "sql".`);
+}
+
 const dbUrl = process.env.SUPABASE_DB_URL || process.env.SUPABASE_POSTGRES_URL || process.env.DATABASE_URL || config.supabase?.dbUrl;
 
 if (!dbUrl) {
