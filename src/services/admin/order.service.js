@@ -8,6 +8,19 @@ const {
   rollback,
 } = require("../../config/mysqlConfig");
 
+const ORDER_STATUS = {
+  PROCESSING: 1,
+  COMPLETED: 2,
+  CANCELED: 3,
+};
+
+const DELIVERY_STATUS = {
+  PROCESSING: 1,
+  OUT_FOR_DELIVERY: 2,
+  DELIVERED: 3,
+  CANCELED: 4,
+};
+
 function buildReceiptUrl(orderId) {
   return `/uploads/invoices/${Number(orderId) + 1000}_invoice.pdf`;
 }
@@ -226,7 +239,7 @@ const updateOrderDeliveryStatus = async (user_id, role_id, id, status) => {
   try {
     if (role_id === 1 || role_id === 2 || role_id === 3) {
       if (role_id === 2) {
-        const checkSql = `select o.franchise_id from tbl_order_details od left join tbl_orders o where od.order_id=o.id where od.id=? and o.franchise_id=?`;
+        const checkSql = `select od.order_id, o.franchise_id from tbl_order_details od left join tbl_orders o on od.order_id=o.id where od.id=? and o.franchise_id=?`;
         const check = await runMysqlQueryWithParam(checkSql, [id, user_id]);
 
         if (check.length) {
@@ -237,14 +250,18 @@ const updateOrderDeliveryStatus = async (user_id, role_id, id, status) => {
           let isMainOrderComplete = true;
           if (itemList.length) {
             itemList.map((item) => {
-              if (item.id != id && (item.delivery_status != 3 || item.delivery_status != 4)) {
+              if (
+                item.id != id &&
+                Number(item.delivery_status) !== DELIVERY_STATUS.DELIVERED &&
+                Number(item.delivery_status) !== DELIVERY_STATUS.CANCELED
+              ) {
                 isMainOrderComplete = false;
               }
             });
           }
           console.log("isMainOrderComplete = ", isMainOrderComplete);
           if (isMainOrderComplete) {
-            await runMysqlQueryWithParam(`update tbl_orders set status=2 where id=?`, [check[0].order_id]);
+            await runMysqlQueryWithParam(`update tbl_orders set status=? where id=?`, [ORDER_STATUS.COMPLETED, check[0].order_id]);
           }
           return { status: true, msg: "Order status updated successfully", responseObj: {} };
         } else {
@@ -260,14 +277,18 @@ const updateOrderDeliveryStatus = async (user_id, role_id, id, status) => {
         let isMainOrderComplete = true;
         if (itemList.length) {
           itemList.map((item) => {
-            if (item.id != id && (item.delivery_status != 3 || item.delivery_status != 4)) {
+            if (
+              item.id != id &&
+              Number(item.delivery_status) !== DELIVERY_STATUS.DELIVERED &&
+              Number(item.delivery_status) !== DELIVERY_STATUS.CANCELED
+            ) {
               isMainOrderComplete = false;
             }
           });
         }
         console.log("isMainOrderComplete = ", isMainOrderComplete);
         if (isMainOrderComplete) {
-          await runMysqlQueryWithParam(`update tbl_orders set status=2 where id=?`, [check[0].order_id]);
+          await runMysqlQueryWithParam(`update tbl_orders set status=? where id=?`, [ORDER_STATUS.COMPLETED, check[0].order_id]);
         }
         let obj = {};
         return { status: true, msg: "Order status updated successfully", responseObj: obj };

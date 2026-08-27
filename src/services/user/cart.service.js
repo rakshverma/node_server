@@ -1,6 +1,11 @@
 const { runMysqlQuery, runMysqlQueryWithParam } = require("../../config/mysqlConfig");
 
-const normalizeUnit = (unit) => `${unit || ""}`.trim().toLowerCase();
+const normalizeUnit = (unit) => {
+  const normalized = `${unit || ""}`.trim().toLowerCase();
+  if (["piece", "pieces", "piece(s)"].includes(normalized)) return "piece(s)";
+  if (["plate", "plates", "plate(s)"].includes(normalized)) return "plate(s)";
+  return normalized;
+};
 
 const addCartDetails = async (data) => {
   try {

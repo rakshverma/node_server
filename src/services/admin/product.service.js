@@ -13,10 +13,18 @@ function normalizePinCodes(pinCodes) {
   return [];
 }
 
+function normalizeUnit(unit) {
+  const normalized = `${unit || ""}`.trim().toLowerCase();
+  if (["piece", "pieces", "piece(s)"].includes(normalized)) return "piece(s)";
+  if (["plate", "plates", "plate(s)"].includes(normalized)) return "plate(s)";
+  return normalized;
+}
+
 function normalizePriceRows(rows) {
   const list = Array.isArray(rows) ? rows : [];
   return list.map((row) => {
     const normalized = { ...row };
+    normalized.unit = normalizeUnit(normalized.unit);
     if (normalized.stock_count === undefined || normalized.stock_count === null || `${normalized.stock_count}` === "") {
       delete normalized.stock_count;
     } else {
