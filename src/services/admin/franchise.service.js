@@ -28,10 +28,31 @@ function stringifyJsonArray(value) {
 const getFranchiseList = async (user_id, role_id) => {
   try {
     if (role_id === 1) {
-      const sql = `SELECT u.name, u.status, u.email, u.phone_number, u.inserted_at, u.modified_at, f.*
+      const sql = `SELECT 
+                            u.name,
+                            u.status,
+                            u.email,
+                            u.phone_number,
+                            u.inserted_at,
+                            u.modified_at,
+                            f.*,
+                            COALESCE(order_counts.processing_orders, 0) AS processing_orders,
+                            COALESCE(order_counts.completed_orders, 0) AS completed_orders,
+                            COALESCE(order_counts.canceled_orders, 0) AS canceled_orders
                          FROM tbl_users u
                          LEFT JOIN tbl_franchise_details f 
-                         ON u.id = f.user_id where u.status!=3 and u.status!=4 and u.role_id=2 order by u.id desc`;
+                         ON u.id = f.user_id
+                         LEFT JOIN (
+                            SELECT 
+                              franchise_id,
+                              SUM(CASE WHEN status = 1 THEN 1 ELSE 0 END) AS processing_orders,
+                              SUM(CASE WHEN status = 2 THEN 1 ELSE 0 END) AS completed_orders,
+                              SUM(CASE WHEN status = 3 THEN 1 ELSE 0 END) AS canceled_orders
+                            FROM tbl_orders
+                            GROUP BY franchise_id
+                         ) order_counts
+                         ON u.id = order_counts.franchise_id
+                         where u.status!=3 and u.status!=4 and u.role_id=2 order by u.id desc`;
       const select = await runMysqlQuery(sql);
       return { status: true, msg: "", responseObj: select };
     } else {
