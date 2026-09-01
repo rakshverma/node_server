@@ -6,6 +6,7 @@ create table if not exists public.tbl_users (
   role_id integer not null,
   email varchar(60) not null,
   password varchar(100) not null,
+  secret_code varchar(100),
   name varchar(50),
   phone_number varchar(12),
   status smallint default 1,
@@ -192,4 +193,3 @@ create table if not exists public.tbl_delevery_boy_details (
   inserted_at timestamptz default now(),
   modified_at timestamptz default now()
 );
-

@@ -1,7 +1,7 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const config = require("../../config").get(process.env.ENV);
-const { validEmail, validName, validPhone, generateRandomString } = require("../../utils/utilityFunctions");
+const { validEmail, validName, validPhone } = require("../../utils/utilityFunctions");
 const sendEmail = require("../../utils/emailUtility");
 const {
   runMysqlQuery,
@@ -13,15 +13,35 @@ const {
   rollback,
 } = require("../../config/mysqlConfig");
 
+const normalizeSecretCode = (value) => `${value || ""}`.trim().toLowerCase();
+
+const validateSecretCode = (secretCode) => {
+  const normalized = normalizeSecretCode(secretCode);
+  return normalized.length >= 4 && normalized.length <= 60;
+};
+
+const ensureSecretCodeColumn = async () => {
+  try {
+    const columns = await runMysqlQueryWithParam("SHOW COLUMNS FROM tbl_users LIKE ?", ["secret_code"]);
+    if (!columns.length) {
+      await runMysqlQuery("ALTER TABLE tbl_users ADD COLUMN secret_code varchar(100) DEFAULT NULL AFTER password");
+    }
+  } catch (e) {
+    console.log("Secret code column check failed:", e);
+  }
+};
+
 const register = async (data) => {
   try {
-    const { name, email, phone, password } = data;
+    const { name, email, phone, password, secretCode } = data;
     if (!name || (name && !validName(name.trim()))) return { status: false, statusCode: 400, msg: "Name is not valid", responseObj: {} };
     if (!email || (email && !validEmail(email.trim()))) return { status: false, statusCode: 400, msg: "Email is not valid", responseObj: {} };
     if (!phone || (phone && !validPhone(phone.trim()))) return { status: false, statusCode: 400, msg: "Phone number is not valid", responseObj: {} };
     if (!password || (password && password.trim().length < 6))
       return { status: false, statusCode: 400, msg: "Password must be minimum 6 characters", responseObj: {} };
+    if (!validateSecretCode(secretCode)) return { status: false, statusCode: 400, msg: "Secret code must be 4 to 60 characters", responseObj: {} };
 
+    await ensureSecretCodeColumn();
     const checkSql = `SELECT email, phone_number from tbl_users WHERE role_id=4 AND (email=? OR phone_number=?)`;
     const check = await runMysqlQueryWithParam(checkSql, [email.toLowerCase().trim(), phone.trim()]);
     console.log("check = ", check);
@@ -34,11 +54,12 @@ const register = async (data) => {
       return { status: false, statusCode: 409, msg: `${err.toString()} already exists`, responseObj: {} };
     }
     const hashedPassword = bcrypt.hashSync(password, config.saltRounds);
+    const hashedSecretCode = bcrypt.hashSync(normalizeSecretCode(secretCode), config.saltRounds);
     const connection = await mysqlConnect();
     try {
       await beginTransaction(connection);
-      const sql = `INSERT INTO tbl_users SET name=?, email=?, password=?, role_id=4, phone_number=?`;
-      const insert = await runTransectionQuery(connection, sql, [name.trim(), email.toLowerCase().trim(), hashedPassword, phone.trim()]);
+      const sql = `INSERT INTO tbl_users SET name=?, email=?, password=?, secret_code=?, role_id=4, phone_number=?`;
+      const insert = await runTransectionQuery(connection, sql, [name.trim(), email.toLowerCase().trim(), hashedPassword, hashedSecretCode, phone.trim()]);
       const insertId = insert.insertId;
       const detailSql = `INSERT INTO tbl_user_details SET user_id=?, is_confirmed=1, login_type=1`;
       await runTransectionQuery(connection, detailSql, [insertId]);
@@ -101,9 +122,12 @@ const validateLogin = async (email, password) => {
   }
 };
 
-const validateForgotPassword = async (email) => {
+const validateForgotPassword = async ({ email, secretCode, password, confPassword }) => {
   try {
     if (!email || (email && !validEmail(email))) return { status: false, msg: "Email is not valid", responseObj: {} };
+    if (!validateSecretCode(secretCode)) return { status: false, msg: "Secret code is not valid", responseObj: {} };
+    if (!password || password.length < 6) return { status: false, msg: "Password should be minimum 6 characters", responseObj: {} };
+    if (password !== confPassword) return { status: false, msg: "Passwords do not match", responseObj: {} };
     else return { status: true };
   } catch (e) {
     return { status: false, msg: "Please try again", responseObj: {} };
@@ -145,33 +169,27 @@ const doLogin = async (emailId, password) => {
   }
 };
 
-const doForgotPassword = async (email) => {
+const doForgotPassword = async ({ email, secretCode, password }) => {
   try {
-    const sql = `select id, email, name from tbl_users where email=? and role_id=4`;
+    await ensureSecretCodeColumn();
+    const sql = `select id, email, name, secret_code from tbl_users where email=? and role_id=4`;
     const check = await runMysqlQueryWithParam(sql, [email.trim().toLowerCase()]);
     if (!check.length) {
       return { status: false, msg: "No user associated with this email id", responseObj: {} };
     }
+    if (!check[0].secret_code) {
+      return { status: false, msg: "Secret code is not set for this account. Please contact support.", responseObj: {} };
+    }
+    if (!bcrypt.compareSync(normalizeSecretCode(secretCode), check[0].secret_code)) {
+      return { status: false, msg: "Secret code is incorrect", responseObj: {} };
+    }
 
     const updateSql = `update tbl_users set password=? where email=? and role_id=4`;
-    const newPassword = generateRandomString();
-    const hashedPassword = bcrypt.hashSync(newPassword, config.saltRounds);
+    const hashedPassword = bcrypt.hashSync(password, config.saltRounds);
     await runMysqlQueryWithParam(updateSql, [hashedPassword, email.trim().toLowerCase()]);
-    const bodyHtml = `
-    <p>
-      Hello, ${check[0].name}!<br>
-    </p>
-    <p>
-    <p style="padding-top: 20px">Your password has been reset.</p>
-    <p style="padding-top: 20px">Your new password is:  ${newPassword}</p>
-    <p style="padding-top: 20px">You can change your password any time after login to your account from the My Account section.</p>
-    </p>
-  `;
-    const subject = `Forgot Password Confirmation Mail - JhatkaByte`;
-    console.log("bodyHtml = ", bodyHtml);
-    await sendEmail(email?.toLowerCase()?.trim(), subject, bodyHtml);
-    return { status: true, msg: "Password successfully sent to your email id.", responseObj: {} };
+    return { status: true, msg: "Password reset successfully. Please sign in with your new password.", responseObj: {} };
   } catch (e) {
+    console.log(e);
     return { status: false, msg: "Please try again", responseObj: {} };
   }
 };

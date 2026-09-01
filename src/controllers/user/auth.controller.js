@@ -20,13 +20,13 @@ const login = async (req, res) => {
 
 const forgotPassword = async (req, res) => {
   console.log("req.body = ", req.body);
-  const { email } = req.body;
-  const validate = await authService.validateForgotPassword(email);
+  const { email, secretCode, password, confPassword } = req.body;
+  const validate = await authService.validateForgotPassword({ email, secretCode, password, confPassword });
   // FIX: Added 'return' to prevent double-response when validation fails
-  if (!validate.status) return response.send(res, 500, 0, validate.msg, {});
-  const fPass = await authService.doForgotPassword(email);
+  if (!validate.status) return response.send(res, 400, 0, validate.msg, {});
+  const fPass = await authService.doForgotPassword({ email, secretCode, password });
   if (fPass.status) return response.send(res, 200, 1, fPass.msg, {});
-  else return response.send(res, 500, 0, fPass.msg, {});
+  else return response.send(res, 400, 0, fPass.msg, {});
 };
 
 module.exports = {

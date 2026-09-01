@@ -477,6 +477,7 @@ CREATE TABLE `tbl_users` (
   `role_id` int NOT NULL,
   `email` varchar(60) NOT NULL,
   `password` varchar(100) NOT NULL,
+  `secret_code` varchar(100) DEFAULT NULL,
   `name` varchar(50) DEFAULT NULL,
   `phone_number` varchar(12) DEFAULT NULL,
   `status` tinyint DEFAULT '1',
