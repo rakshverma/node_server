@@ -49,6 +49,14 @@ const getOrderItemOnId = async (req, res) => {
   else response.send(res, 500, 0, list.msg, []);
 };
 
+const cancelFutureOrder = async (req, res) => {
+  const { orderId } = req.body;
+  const { user_id, role_id } = req;
+  const list = await orderService.cancelFutureOrder(orderId, user_id, role_id);
+  if (list.status) response.send(res, 200, 1, list.msg, list.responseObj);
+  else response.send(res, 500, 0, list.msg, list.responseObj);
+};
+
 module.exports = {
   addOrderDetails,
   getOrderList,
@@ -56,4 +64,5 @@ module.exports = {
   getReviews,
   deleteReview,
   getOrderItemOnId,
+  cancelFutureOrder,
 };

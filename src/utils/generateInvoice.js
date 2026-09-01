@@ -1,6 +1,38 @@
 const htmlToPdf = require("html-pdf");
+
+function escapeHtml(value) {
+  return `${value || ""}`
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function splitAddressIntoTwoLines(address, maxLineLength = 42) {
+  const words = `${address || ""}`.replace(/\s+/g, " ").trim().split(" ").filter(Boolean);
+  if (!words.length) return ["-"];
+
+  const lines = [""];
+  words.forEach((word) => {
+    const currentLine = lines[lines.length - 1];
+    const nextLine = currentLine ? `${currentLine} ${word}` : word;
+    if (nextLine.length <= maxLineLength || lines.length === 2) {
+      lines[lines.length - 1] = nextLine;
+      return;
+    }
+    lines.push(word);
+  });
+
+  return lines.slice(0, 2).map((line, index) => {
+    if (index === 1 && line.length > maxLineLength) return `${line.slice(0, maxLineLength - 3)}...`;
+    return line;
+  });
+}
+
 const generateInvoice = async (orderArr, cartInfo, orderId, deliveryDates, list) => {
   console.log("orderArr = ", orderArr);
+  const addressLines = splitAddressIntoTwoLines(orderArr[2]);
   return `
   <!DOCTYPE html>
   <html lang="en">
@@ -46,6 +78,11 @@ const generateInvoice = async (orderArr, cartInfo, orderId, deliveryDates, list)
       }
       .shipping-address {
         margin-bottom: 20px;
+      }
+      .shipping-address p {
+        margin: 2px 0;
+        line-height: 1.25;
+        word-break: break-word;
       }
       .total {
         font-weight: bold;
@@ -95,10 +132,10 @@ const generateInvoice = async (orderArr, cartInfo, orderId, deliveryDates, list)
   
       <div class="shipping-address">
         <h3>Shipping Address:</h3>
-        <p>${orderArr[2]}</p>
-        <p>Landmark: ${orderArr[11]}</p>
-        <p>Phone Number: ${orderArr[9]}</p>
-        <p>Additional Notes: ${orderArr[7]}</p>
+        <p>${addressLines.map(escapeHtml).join("<br />")}</p>
+        <p>Landmark: ${escapeHtml(orderArr[11])}</p>
+        <p>Phone Number: ${escapeHtml(orderArr[9])}</p>
+        <p>Additional Notes: ${escapeHtml(orderArr[7])}</p>
       </div>
     </div>
   </body>

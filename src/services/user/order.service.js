@@ -37,6 +37,40 @@ function buildReceiptUrl(orderId) {
   return `/uploads/invoices/${Number(orderId) + 1000}_invoice.pdf`;
 }
 
+const ORDER_STATUS = {
+  PROCESSING: 1,
+  COMPLETED: 2,
+  CANCELED: 3,
+};
+
+const DELIVERY_STATUS = {
+  PROCESSING: 1,
+  OUT_FOR_DELIVERY: 2,
+  DELIVERED: 3,
+  CANCELED: 4,
+};
+
+function isFutureDeliveryDate(deliveryDate) {
+  const value = `${deliveryDate || ""}`.trim();
+  if (!value) return false;
+  const parsed = moment(value, ["DD/MM/YYYY", "D/M/YYYY", "YYYY-MM-DD", "MM/DD/YYYY"], true);
+  return parsed.isValid() && parsed.startOf("day").isAfter(moment().startOf("day"));
+}
+
+function getOrderStatusFromItems(items) {
+  if (items.every((item) => Number(item.delivery_status) === DELIVERY_STATUS.CANCELED)) {
+    return ORDER_STATUS.CANCELED;
+  }
+  if (
+    items.every((item) =>
+      [DELIVERY_STATUS.DELIVERED, DELIVERY_STATUS.CANCELED].includes(Number(item.delivery_status))
+    )
+  ) {
+    return ORDER_STATUS.COMPLETED;
+  }
+  return ORDER_STATUS.PROCESSING;
+}
+
 function attachReceiptUrls(orders) {
   return orders.map((order) => ({
     ...order,
@@ -438,7 +472,75 @@ const getOrderItemOnId = async (refId) => {
   }
 };
 
-module.exports = { addOrderDetails, getOrderList, addReview, getReviewList, deleteReview, getOrderItemOnId };
+const cancelFutureOrder = async (orderId, user_id, role_id) => {
+  try {
+    if (role_id !== 4) {
+      return { status: false, msg: "User is not authorized. Please login again", responseObj: {} };
+    }
+
+    const normalizedOrderId = Number(orderId);
+    if (!normalizedOrderId) {
+      return { status: false, msg: "Unable to cancel order. Invalid order details.", responseObj: {} };
+    }
+
+    const orderSql = `SELECT id, user_id, shipping_cost FROM tbl_orders WHERE id=? AND user_id=?`;
+    const orders = await runMysqlQueryWithParam(orderSql, [normalizedOrderId, user_id]);
+    if (!orders.length) {
+      return { status: false, msg: "Unable to cancel order. Order not found.", responseObj: {} };
+    }
+
+    const itemSql = `SELECT id, price, count, delivery_status, delivery_date FROM tbl_order_details WHERE order_id=?`;
+    const items = await runMysqlQueryWithParam(itemSql, [normalizedOrderId]);
+    const eligibleItems = items.filter((item) => {
+      return (
+        [DELIVERY_STATUS.PROCESSING, DELIVERY_STATUS.OUT_FOR_DELIVERY].includes(Number(item.delivery_status)) &&
+        isFutureDeliveryDate(item.delivery_date)
+      );
+    });
+
+    if (!eligibleItems.length) {
+      return { status: false, msg: "Only future processing orders can be canceled.", responseObj: {} };
+    }
+
+    const connection = await mysqlConnect();
+    try {
+      await beginTransaction(connection);
+      const eligibleIds = eligibleItems.map((item) => item.id);
+      await runTransectionQuery(
+        connection,
+        `UPDATE tbl_order_details SET delivery_status=?, delivery_boy_id=NULL WHERE id IN (?)`,
+        [DELIVERY_STATUS.CANCELED, eligibleIds]
+      );
+
+      const updatedItems = items.map((item) =>
+        eligibleIds.includes(item.id) ? { ...item, delivery_status: DELIVERY_STATUS.CANCELED } : item
+      );
+      const activeItems = updatedItems.filter((item) => Number(item.delivery_status) !== DELIVERY_STATUS.CANCELED);
+      const subTotal = activeItems.reduce((total, item) => total + Number(item.price) * Number(item.count), 0);
+      const shippingCost = activeItems.length ? Number(orders[0].shipping_cost || 0) : 0;
+      const nextStatus = getOrderStatusFromItems(updatedItems);
+
+      await runTransectionQuery(
+        connection,
+        `UPDATE tbl_orders SET status=?, total_price=?, shipping_cost=? WHERE id=? AND user_id=?`,
+        [nextStatus, subTotal + shippingCost, shippingCost, normalizedOrderId, user_id]
+      );
+      await commit(connection);
+      return { status: true, msg: "Future order canceled successfully", responseObj: {} };
+    } catch (e) {
+      await rollback(connection);
+      console.log(e);
+      return { status: false, msg: "Unable to cancel order. Please try again.", responseObj: {} };
+    } finally {
+      connection.release();
+    }
+  } catch (e) {
+    console.log(e);
+    return { status: false, msg: "Unable to cancel order. Please try again.", responseObj: {} };
+  }
+};
+
+module.exports = { addOrderDetails, getOrderList, addReview, getReviewList, deleteReview, getOrderItemOnId, cancelFutureOrder };
 
 function getOrderProductHtml(cartInfo, deliveryDates, list) {
   let html = "";

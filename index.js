@@ -11,7 +11,7 @@ const appRoutes = require("./src/routes");
 const { createSignedUrl } = require("./src/utils/supabaseStorage");
 const app = express();
 const port = process.env.PORT || 3000;
-const allowedOrigins = (process.env.CORS_ORIGINS || "http://localhost:3005,http://localhost:3006")
+const allowedOrigins = (process.env.CORS_ORIGINS || "http://localhost:3005,http://localhost:3006,http://localhost,https://localhost,capacitor://localhost,ionic://localhost")
   .split(",")
   .map((origin) => origin.trim())
   .filter(Boolean);
