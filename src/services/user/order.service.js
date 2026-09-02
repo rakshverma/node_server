@@ -297,7 +297,6 @@ const addOrderDetails = async (formData, cartId, deliveryDates, existingUserId, 
       ]);
       await runTransectionQuery(connection, detailsSql, [values]);
       await updateStockAfterOrder(connection, cartInfo);
-      const receipt = await createOrderReceipt(connection, orderArr, cartInfo, orderId, formData.email, deliveryDates);
 
       let user = {};
       console.log("userCheck = ", userCheck);
@@ -323,25 +322,16 @@ const addOrderDetails = async (formData, cartId, deliveryDates, existingUserId, 
 
       await runTransectionQuery(connection, "DELETE FROM tbl_cart WHERE cartId=?", [cartId]);
       await commit(connection);
-      let emailSent = false;
-      try {
-        await sendOrderMail(formData.email, orderId, receipt);
-        emailSent = true;
-      } catch (e) {
-        console.log("Order receipt email failed:", e);
-      }
+      createAndSendOrderReceipt(orderArr, cartInfo, orderId, formData.email, deliveryDates).catch((e) => {
+        console.log("Background order receipt failed:", e);
+      });
       return {
         status: true,
         msg: "Order placed successfully",
         responseObj: {
           refId,
           user,
-          receipt: {
-            fileName: receipt.fileName,
-            storagePath: receipt.storagePath,
-            publicUrl: receipt.publicUrl,
-            emailSent,
-          },
+          receipt: null,
         },
       };
     } catch (e) {
@@ -582,6 +572,21 @@ async function createOrderReceipt(connection, orderArr, cartInfo, orderId, email
     publicUrl: await createSignedUrl(storagePath),
     pdfBuffer,
   };
+}
+
+async function createAndSendOrderReceipt(orderArr, cartInfo, orderId, email, deliveryDates) {
+  const connection = await mysqlConnect();
+  try {
+    const receipt = await createOrderReceipt(connection, orderArr, cartInfo, orderId, email, deliveryDates);
+    try {
+      await sendOrderMail(email, orderId, receipt);
+    } catch (e) {
+      console.log("Order receipt email failed:", e);
+    }
+    return receipt;
+  } finally {
+    connection.release();
+  }
 }
 
 async function sendOrderMail(email, orderId, receipt) {
