@@ -206,7 +206,8 @@ const addOrderDetails = async (formData, cartId, deliveryDates, existingUserId, 
       };
     }
     let subTotal = 0;
-    let shipping = shipping_cost;
+    let shipping = Number(shipping_cost);
+    if (!Number.isFinite(shipping)) shipping = Number(originalShipping) || 0;
     const shipping_address = `${formData.street}, ${formData.district}, ${formData.state}, pin code - ${formData.pincode}`;
     const billing_address = `${formData.street}, ${formData.district}, ${formData.state}, pin code - ${formData.pincode}`;
     cartInfo.forEach((item) => {

@@ -4,7 +4,7 @@ const validEmail = (email) => {
 };
 
 const validName = (name) => {
-  const regex = /^[a-zA-Z]+(\s[a-zA-Z]+)?$/;
+  const regex = /^[a-zA-Z]+(([',. -][a-zA-Z ])?[a-zA-Z]*)*$/;
   return regex.test(name);
 };
 

@@ -22,12 +22,16 @@ const validateSecretCode = (secretCode) => {
 
 const ensureSecretCodeColumn = async () => {
   try {
-    const columns = await runMysqlQueryWithParam("SHOW COLUMNS FROM tbl_users LIKE ?", ["secret_code"]);
+    const columns = await runMysqlQueryWithParam(
+      "SELECT column_name FROM information_schema.columns WHERE table_name=? AND column_name=?",
+      ["tbl_users", "secret_code"]
+    );
     if (!columns.length) {
-      await runMysqlQuery("ALTER TABLE tbl_users ADD COLUMN secret_code varchar(100) DEFAULT NULL AFTER password");
+      await runMysqlQuery("ALTER TABLE tbl_users ADD COLUMN IF NOT EXISTS secret_code varchar(100) DEFAULT NULL");
     }
   } catch (e) {
     console.log("Secret code column check failed:", e);
+    throw e;
   }
 };
 
