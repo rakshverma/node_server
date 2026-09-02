@@ -256,9 +256,14 @@ const addOrderDetails = async (formData, cartId, deliveryDates, existingUserId, 
         console.log("userCheck[0].pin_code = ", userCheck[0].pin_code);
         console.log("formData.pincode = ", formData.pincode);
         if (!userCheck[0].pin_code) {
-          userDataSql = `INSERT INTO tbl_user_details (user_id, street, district, state, landmark, pin_code) VALUES (?,?,?,?,?,?)`;
-          userParams = [userId, ...userDataArr];
-          await runTransectionQuery(connection, userDataSql, userParams);
+          userDataSql = `UPDATE tbl_user_details SET street=?, district=?, state=?, landmark=?, pin_code=? WHERE user_id=?`;
+          userParams = [...userDataArr, userId];
+          const updateResult = await runTransectionQuery(connection, userDataSql, userParams);
+          if (!updateResult.affectedRows) {
+            userDataSql = `INSERT INTO tbl_user_details (user_id, street, district, state, landmark, pin_code) VALUES (?,?,?,?,?,?)`;
+            userParams = [userId, ...userDataArr];
+            await runTransectionQuery(connection, userDataSql, userParams);
+          }
         }
         if (userCheck[0].pin_code && userCheck[0].pin_code != formData.pincode) {
           userDataSql = `UPDATE tbl_user_details SET street=?, district=?, state=?, landmark=?, pin_code=? WHERE user_id=?`;
