@@ -19,7 +19,7 @@ const getCategoryList = async () => {
   }
 };
 
-const OUT_OF_SERVICE_MSG = "Pincode is out of service area definition";
+const OUT_OF_SERVICE_MSG = "Out of service area definition";
 
 const getFranchiseForPincode = async (pinCode) => {
   const normalizedPinCode = `${pinCode || ""}`.trim();

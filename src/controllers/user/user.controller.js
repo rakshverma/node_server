@@ -21,10 +21,42 @@ const getDistrictList = async (req, res) => {
   else response.send(res, 500, 0, list.msg, []);
 };
 
+const getUserAddressList = async (req, res) => {
+  const { user_id } = req;
+  const list = await userService.getUserAddressList(user_id);
+  if (list.status) response.send(res, 200, 1, list.msg, list.responseObj);
+  else response.send(res, 500, 0, list.msg, []);
+};
+
 const addUserAddress = async (req, res) => {
   const { user_id } = req;
   const { street, state, district, pincode, landmark } = req.body;
-  const list = await userService.addUserAddress(street, state, district, pincode, landmark, user_id);
+  const list = req.body?.id || req.body?.label || req.body?.isDefault !== undefined || req.body?.recipientName || req.body?.phoneNumber
+    ? await userService.saveUserAddress(req.body, user_id)
+    : await userService.addUserAddress(street, state, district, pincode, landmark, user_id);
+  if (list.status) response.send(res, 200, 1, list.msg, list.responseObj);
+  else response.send(res, 500, 0, list.msg, []);
+};
+
+const saveUserAddress = async (req, res) => {
+  const { user_id } = req;
+  const list = await userService.saveUserAddress(req.body, user_id);
+  if (list.status) response.send(res, 200, 1, list.msg, list.responseObj);
+  else response.send(res, 500, 0, list.msg, []);
+};
+
+const setDefaultUserAddress = async (req, res) => {
+  const { user_id } = req;
+  const { id } = req.params;
+  const list = await userService.setDefaultUserAddress(id, user_id);
+  if (list.status) response.send(res, 200, 1, list.msg, list.responseObj);
+  else response.send(res, 500, 0, list.msg, []);
+};
+
+const deleteUserAddress = async (req, res) => {
+  const { user_id } = req;
+  const { id } = req.params;
+  const list = await userService.deleteUserAddress(id, user_id);
   if (list.status) response.send(res, 200, 1, list.msg, list.responseObj);
   else response.send(res, 500, 0, list.msg, []);
 };
@@ -41,6 +73,10 @@ module.exports = {
   getUserInfo,
   getUserDistrict,
   getDistrictList,
+  getUserAddressList,
   addUserAddress,
+  saveUserAddress,
+  setDefaultUserAddress,
+  deleteUserAddress,
   updateUserAccount,
 };
