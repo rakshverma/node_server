@@ -504,7 +504,7 @@ const cancelFutureOrder = async (orderId, user_id, role_id) => {
       const eligibleIds = eligibleItems.map((item) => item.id);
       await runTransectionQuery(
         connection,
-        `UPDATE tbl_order_details SET delivery_status=?, delivery_boy_id=NULL WHERE id IN (?)`,
+        `UPDATE tbl_order_details SET delivery_status=?, delivery_boy_id=NULL WHERE id = ANY(?)`,
         [DELIVERY_STATUS.CANCELED, eligibleIds]
       );
 
