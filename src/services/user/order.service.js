@@ -360,7 +360,7 @@ function generatePassword() {
 
 const getOrderList = async (refId, user_id, role_id, pid) => {
   try {
-    if (role_id !== 4) return { status: false, msg: "User is not authorized. Please login again", responseObj: [] };
+    if (Number(role_id) !== 4) return { status: false, msg: "User is not authorized. Please login again", responseObj: [] };
     let whereClause = `WHERE o.user_id=?`;
     let params = [user_id];
     if (refId) {
@@ -470,7 +470,7 @@ const getOrderItemOnId = async (refId) => {
 
 const cancelFutureOrder = async (orderId, user_id, role_id) => {
   try {
-    if (role_id !== 4) {
+    if (Number(role_id) !== 4) {
       return { status: false, msg: "User is not authorized. Please login again", responseObj: {} };
     }
 

@@ -11,9 +11,20 @@ const {
 } = require("../../config/mysqlConfig");
 const { generateRandomString } = require("../../utils/utilityFunctions");
 
+const OUT_OF_SERVICE_MSG = "Pincode is out of service area definition";
+
+const getFranchiseForPincode = async (pincode) => {
+  const normalizedPincode = `${pincode || ""}`.trim();
+  if (!normalizedPincode) return null;
+  const param = JSON.stringify([normalizedPincode]);
+  const franchiseSql = `SELECT user_id FROM tbl_franchise_details WHERE JSON_CONTAINS(zip_codes, ?)`;
+  const franchise = await runMysqlQueryWithParam(franchiseSql, [param]);
+  return franchise.length ? franchise[0] : null;
+};
+
 const getCurrentUser = async (userId, roleId) => {
   try {
-    if (roleId === 4) {
+    if (Number(roleId) === 4) {
       console.log("userId = ", userId);
       const sql = `SELECT id, email, name, phone_number, status FROM tbl_users WHERE role_id=4 AND id=?`;
       const check = await runMysqlQueryWithParam(sql, [userId]);
@@ -36,8 +47,13 @@ const getCurrentUser = async (userId, roleId) => {
 
 const getUserDistrict = async (pincode) => {
   try {
+    const normalizedPincode = `${pincode || ""}`.trim();
+    const franchise = await getFranchiseForPincode(normalizedPincode);
+    if (!normalizedPincode || !franchise?.user_id) {
+      return { status: false, msg: OUT_OF_SERVICE_MSG, responseObj: "" };
+    }
     const sql = `SELECT district FROM mst_pin_codes WHERE pin_code=?`;
-    const response = await runMysqlQueryWithParam(sql, [pincode]);
+    const response = await runMysqlQueryWithParam(sql, [normalizedPincode]);
     if (response.length) {
       return {
         status: true,
@@ -46,8 +62,8 @@ const getUserDistrict = async (pincode) => {
       };
     } else {
       return {
-        status: true,
-        msg: "District fetched successfully",
+        status: false,
+        msg: OUT_OF_SERVICE_MSG,
         responseObj: "",
       };
     }
@@ -73,21 +89,30 @@ const getDistrictList = async () => {
 const addUserAddress = async (street, state, district, pincode, landmark, user_id) => {
   console.log("user_id = ", user_id);
   try {
+    const normalizedPincode = `${pincode || ""}`.trim();
+    const normalizedDistrict = `${district || ""}`.trim();
+    const franchise = await getFranchiseForPincode(normalizedPincode);
+    if (!normalizedPincode || !franchise?.user_id) {
+      return { status: false, msg: OUT_OF_SERVICE_MSG, responseObj: [] };
+    }
     const sql = `select district from mst_pin_codes where pin_code=?`;
-    const check = await runMysqlQueryWithParam(sql, [pincode]);
-    if (check.length && check[0].district !== district) return { status: false, msg: "District and pin code does not match", responseObj: [] };
+    const check = await runMysqlQueryWithParam(sql, [normalizedPincode]);
+    if (!check.length) return { status: false, msg: OUT_OF_SERVICE_MSG, responseObj: [] };
+    if (`${check[0].district || ""}`.trim().toLowerCase() !== normalizedDistrict.toLowerCase()) {
+      return { status: false, msg: "District and pin code does not match", responseObj: [] };
+    }
     const userCheck = await runMysqlQueryWithParam("select id from tbl_user_details where user_id=?", [user_id]);
     if (userCheck.length) {
       const updateSql = `update tbl_user_details set street=?, state=?, district=?, pin_code=?, landmark=? where user_id=?`;
-      await runMysqlQueryWithParam(updateSql, [street, state, district, pincode, landmark, user_id]);
+      await runMysqlQueryWithParam(updateSql, [street, state, normalizedDistrict, normalizedPincode, landmark, user_id]);
     } else {
       const addSql = `insert into tbl_user_details (user_id, street, state, district, pin_code, landmark) values (?,?,?,?,?,?)`;
-      await runMysqlQueryWithParam(addSql, [user_id, street, state, district, pincode, landmark]);
+      await runMysqlQueryWithParam(addSql, [user_id, street, state, normalizedDistrict, normalizedPincode, landmark]);
     }
     return {
       status: true,
       msg: "Address updated successfully",
-      responseObj: { street, state, district, pin_code: pincode, landmark },
+      responseObj: { street, state, district: normalizedDistrict, pin_code: normalizedPincode, landmark },
     };
   } catch (e) {
     console.log(e);
