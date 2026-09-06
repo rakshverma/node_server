@@ -44,6 +44,17 @@ const ensureAddressBookTable = async () => {
   await runMysqlQuery(`ALTER TABLE public.tbl_user_addresses ADD COLUMN IF NOT EXISTS locality varchar(100)`);
   await runMysqlQuery(`ALTER TABLE public.tbl_user_addresses ADD COLUMN IF NOT EXISTS city varchar(80)`);
   await runMysqlQuery(`CREATE INDEX IF NOT EXISTS tbl_user_addresses_user_index ON public.tbl_user_addresses (user_id)`);
+  await runMysqlQuery(`
+    UPDATE public.tbl_user_addresses target
+    SET is_default = false
+    WHERE is_default = true
+      AND id NOT IN (
+        SELECT DISTINCT ON (user_id) id
+        FROM public.tbl_user_addresses
+        WHERE is_default = true
+        ORDER BY user_id, updated_at DESC NULLS LAST, id DESC
+      )
+  `);
   await runMysqlQuery(`CREATE UNIQUE INDEX IF NOT EXISTS tbl_user_addresses_one_default ON public.tbl_user_addresses (user_id) WHERE is_default = true`);
   addressBookReady = true;
 };

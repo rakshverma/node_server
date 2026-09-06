@@ -5,7 +5,6 @@ const orderController = require("../../controllers/admin/order.controller");
 
 router.get("/", verifyToken, orderController.getAllOrders);
 router.get("/byFrnchise", verifyToken, orderController.getAllOrdersByFranchise);
-router.get("/:id", verifyToken, orderController.getOrderOnID);
 router.put("/status", verifyToken, orderController.updateOrderDeliveryStatus);
 router.put("/assigndeliveryboy", verifyToken, orderController.updateDeliveryBoyOnOrder);
 router.get("/deliveryboyList/:orderId", verifyToken, orderController.getFranchiseListOnOrder);
@@ -18,5 +17,6 @@ router.put("/completeOrderItems", verifyToken, orderController.completeOrderItem
 router.put("/processOrderItems", verifyToken, orderController.processOrderItems);
 router.put("/updateAdminNotes", verifyToken, orderController.updateAdminNotes);
 router.put("/updateDeliveryDate", verifyToken, orderController.updateDeliveryDate);
+router.get("/:id", verifyToken, orderController.getOrderOnID);
 
 module.exports = router;

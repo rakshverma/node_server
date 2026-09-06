@@ -26,10 +26,6 @@ ALTER TABLE public.tbl_user_addresses ADD COLUMN IF NOT EXISTS city varchar(80);
 CREATE INDEX IF NOT EXISTS tbl_user_addresses_user_index
   ON public.tbl_user_addresses (user_id);
 
-CREATE UNIQUE INDEX IF NOT EXISTS tbl_user_addresses_one_default
-  ON public.tbl_user_addresses (user_id)
-  WHERE is_default = true;
-
 INSERT INTO public.tbl_user_addresses (user_id, label, street, district, state, landmark, pin_code, is_default)
 SELECT user_id, 'Home', street, district, state, landmark, pin_code, true
 FROM public.tbl_user_details
@@ -39,3 +35,17 @@ WHERE street IS NOT NULL
     SELECT 1 FROM public.tbl_user_addresses
     WHERE tbl_user_addresses.user_id = tbl_user_details.user_id
   );
+
+UPDATE public.tbl_user_addresses target
+SET is_default = false
+WHERE is_default = true
+  AND id NOT IN (
+    SELECT DISTINCT ON (user_id) id
+    FROM public.tbl_user_addresses
+    WHERE is_default = true
+    ORDER BY user_id, updated_at DESC NULLS LAST, id DESC
+  );
+
+CREATE UNIQUE INDEX IF NOT EXISTS tbl_user_addresses_one_default
+  ON public.tbl_user_addresses (user_id)
+  WHERE is_default = true;
