@@ -9,8 +9,13 @@ function escapeHtml(value) {
     .replace(/'/g, "&#039;");
 }
 
-function splitAddressIntoTwoLines(address, maxLineLength = 42) {
-  const words = `${address || ""}`.replace(/\s+/g, " ").trim().split(" ").filter(Boolean);
+function splitAddressIntoTwoLines(address, pincode = "", maxLineLength = 42) {
+  const pinText = `${pincode || ""}`.trim();
+  const normalizedAddress = `${address || ""}`
+    .replace(new RegExp(`,?\\s*pin\\s*code\\s*-?\\s*${pinText}\\s*$`, "i"), "")
+    .replace(/\s+/g, " ")
+    .trim();
+  const words = normalizedAddress.split(" ").filter(Boolean);
   if (!words.length) return ["-"];
 
   const lines = [""];
@@ -24,14 +29,24 @@ function splitAddressIntoTwoLines(address, maxLineLength = 42) {
     lines.push(word);
   });
 
-  return lines.slice(0, 2).map((line, index) => {
-    if (index === 1 && line.length > maxLineLength) return `${line.slice(0, maxLineLength - 3)}...`;
+  const twoLines = lines.slice(0, 2);
+  if (pinText) {
+    const pinSuffix = `PIN ${pinText}`;
+    if (twoLines.length === 1) twoLines.push(pinSuffix);
+    else if (!twoLines[1].includes(pinText)) twoLines[1] = `${twoLines[1]}, ${pinSuffix}`;
+  }
+
+  return twoLines.map((line, index) => {
+    if (index === 1 && line.length > maxLineLength) {
+      const pinSuffix = pinText ? `, PIN ${pinText}` : "";
+      return `${line.slice(0, Math.max(0, maxLineLength - pinSuffix.length - 3))}...${pinSuffix}`;
+    }
     return line;
   });
 }
 
 const generateInvoice = async (orderArr, cartInfo, orderId, deliveryDates, list) => {
-  const addressLines = splitAddressIntoTwoLines(orderArr[2]);
+  const addressLines = splitAddressIntoTwoLines(orderArr[2], orderArr[10]);
   return `
   <!DOCTYPE html>
   <html lang="en">

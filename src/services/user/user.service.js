@@ -107,13 +107,12 @@ const getUserDistrict = async (pincode) => {
         msg: "District fetched successfully",
         responseObj: response[0].district,
       };
-    } else {
-      return {
-        status: false,
-        msg: OUT_OF_SERVICE_MSG,
-        responseObj: "",
-      };
     }
+    return {
+      status: true,
+      msg: "Pincode is inside service area",
+      responseObj: "",
+    };
   } catch (e) {
     return { status: false, msg: "Please try again", responseObj: {} };
   }
@@ -145,36 +144,33 @@ const addUserAddress = async (street, state, district, pincode, landmark, user_i
     }
     const sql = `select district from mst_pin_codes where pin_code=?`;
     const check = await runMysqlQueryWithParam(sql, [normalizedPincode]);
-    if (!check.length) return { status: false, msg: OUT_OF_SERVICE_MSG, responseObj: [] };
-    if (`${check[0].district || ""}`.trim().toLowerCase() !== normalizedDistrict.toLowerCase()) {
-      return { status: false, msg: "District and pin code does not match", responseObj: [] };
-    }
+    const serviceDistrict = `${check?.[0]?.district || normalizedDistrict}`.trim();
     const addressList = await runMysqlQueryWithParam("SELECT id FROM tbl_user_addresses WHERE user_id=? ORDER BY is_default DESC, id ASC", [user_id]);
     const addressId = addressList?.[0]?.id;
     if (addressId) {
       await runMysqlQueryWithParam("UPDATE tbl_user_addresses SET is_default=false WHERE user_id=?", [user_id]);
       await runMysqlQueryWithParam(
         "UPDATE tbl_user_addresses SET label=?, street=?, state=?, district=?, pin_code=?, landmark=?, is_default=true, updated_at=now() WHERE id=? AND user_id=?",
-        [normalizedLabel, street, state, normalizedDistrict, normalizedPincode, landmark, addressId, user_id]
+        [normalizedLabel, street, state, serviceDistrict, normalizedPincode, landmark, addressId, user_id]
       );
     } else {
       await runMysqlQueryWithParam(
         "INSERT INTO tbl_user_addresses (user_id, label, street, state, district, pin_code, landmark, is_default) VALUES (?,?,?,?,?,?,?,true)",
-        [user_id, normalizedLabel, street, state, normalizedDistrict, normalizedPincode, landmark]
+        [user_id, normalizedLabel, street, state, serviceDistrict, normalizedPincode, landmark]
       );
     }
     const userCheck = await runMysqlQueryWithParam("select id from tbl_user_details where user_id=?", [user_id]);
     if (userCheck.length) {
       const updateSql = `update tbl_user_details set street=?, state=?, district=?, pin_code=?, landmark=? where user_id=?`;
-      await runMysqlQueryWithParam(updateSql, [street, state, normalizedDistrict, normalizedPincode, landmark, user_id]);
+      await runMysqlQueryWithParam(updateSql, [street, state, serviceDistrict, normalizedPincode, landmark, user_id]);
     } else {
       const addSql = `insert into tbl_user_details (user_id, street, state, district, pin_code, landmark) values (?,?,?,?,?,?)`;
-      await runMysqlQueryWithParam(addSql, [user_id, street, state, normalizedDistrict, normalizedPincode, landmark]);
+      await runMysqlQueryWithParam(addSql, [user_id, street, state, serviceDistrict, normalizedPincode, landmark]);
     }
     return {
       status: true,
       msg: "Address updated successfully",
-      responseObj: { street, state, district: normalizedDistrict, pin_code: normalizedPincode, landmark },
+      responseObj: { street, state, district: serviceDistrict, pin_code: normalizedPincode, landmark },
     };
   } catch (e) {
     return { status: false, msg: "Could not update address. Please try again", responseObj: [] };
@@ -189,11 +185,8 @@ const validateAddressData = async (data) => {
     return { status: false, msg: OUT_OF_SERVICE_MSG };
   }
   const check = await runMysqlQueryWithParam("SELECT district FROM mst_pin_codes WHERE pin_code=?", [normalizedPincode]);
-  if (!check.length) return { status: false, msg: OUT_OF_SERVICE_MSG };
-  if (`${check[0].district || ""}`.trim().toLowerCase() !== normalizedDistrict.toLowerCase()) {
-    return { status: false, msg: "District and pin code does not match" };
-  }
-  return { status: true, pincode: normalizedPincode, district: normalizedDistrict };
+  const serviceDistrict = `${check?.[0]?.district || normalizedDistrict}`.trim();
+  return { status: true, pincode: normalizedPincode, district: serviceDistrict };
 };
 
 const getUserAddressList = async (user_id) => {

@@ -171,9 +171,14 @@ async function ensureOrderAddressBookTable(connection) {
   await runTransectionQuery(connection, `CREATE UNIQUE INDEX IF NOT EXISTS tbl_user_addresses_one_default ON public.tbl_user_addresses (user_id) WHERE is_default = true`, []);
 }
 
-async function saveCheckoutAddressAsDefault(connection, userId, formData) {
+async function saveCheckoutAddress(connection, userId, formData, makeDefault = false) {
   await ensureOrderAddressBookTable(connection);
   const existing = await runTransectionQuery(connection, "SELECT id FROM tbl_user_addresses WHERE user_id=? AND is_default=true LIMIT 1", [userId]);
+  const matching = await runTransectionQuery(
+    connection,
+    "SELECT id FROM tbl_user_addresses WHERE user_id=? AND pin_code=? AND street=? LIMIT 1",
+    [userId, formData.pincode, formData.street]
+  );
   const houseApartment = `${formData.houseApartment || formData.house_apartment || ""}`.trim();
   const streetName = `${formData.streetName || formData.street_name || ""}`.trim();
   const locality = `${formData.locality || ""}`.trim();
@@ -193,7 +198,7 @@ async function saveCheckoutAddressAsDefault(connection, userId, formData) {
     formData.pincode,
     userId,
   ];
-  if (existing.length) {
+  if (makeDefault && existing.length) {
     await runTransectionQuery(
       connection,
       `UPDATE tbl_user_addresses
@@ -202,13 +207,16 @@ async function saveCheckoutAddressAsDefault(connection, userId, formData) {
       params
     );
   } else {
-    await runTransectionQuery(connection, "UPDATE tbl_user_addresses SET is_default=false WHERE user_id=?", [userId]);
+    if (matching.length) return;
+    if (makeDefault) {
+      await runTransectionQuery(connection, "UPDATE tbl_user_addresses SET is_default=false WHERE user_id=?", [userId]);
+    }
     await runTransectionQuery(
       connection,
       `INSERT INTO tbl_user_addresses
        (label, recipient_name, phone_number, house_apartment, street_name, locality, city, street, district, state, landmark, pin_code, user_id, is_default)
-       VALUES ('Home',?,?,?,?,?,?,?,?,?,?,?,?,true)`,
-      params
+       VALUES ('Home',?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      [...params, makeDefault]
     );
   }
 }
@@ -301,7 +309,7 @@ const addOrderDetails = async (formData, cartId, deliveryDates, existingUserId, 
     }
     let subTotal = 0;
     let shipping = Number(shipping_cost);
-    if (!Number.isFinite(shipping)) shipping = Number(originalShipping) || 0;
+    if (!Number.isFinite(shipping) || shipping <= 0) shipping = Number(originalShipping) || 0;
     const shipping_address = `${formData.street}, ${formData.district}, ${formData.state}, pin code - ${formData.pincode}`;
     const billing_address = `${formData.street}, ${formData.district}, ${formData.state}, pin code - ${formData.pincode}`;
     cartInfo.forEach((item) => {
@@ -357,13 +365,10 @@ const addOrderDetails = async (formData, cartId, deliveryDates, existingUserId, 
             userParams = [userId, ...userDataArr];
             await runTransectionQuery(connection, userDataSql, userParams);
           }
+          await saveCheckoutAddress(connection, userId, formData, true);
+        } else {
+          await saveCheckoutAddress(connection, userId, formData, false);
         }
-        if (userCheck[0].pin_code) {
-          userDataSql = `UPDATE tbl_user_details SET street=?, district=?, state=?, landmark=?, pin_code=? WHERE user_id=?`;
-          userParams = [...userDataArr, userId];
-          await runTransectionQuery(connection, userDataSql, userParams);
-        }
-        await saveCheckoutAddressAsDefault(connection, userId, formData);
       } else {
         userId = 0;
         let orderSql = `INSERT INTO tbl_orders 
@@ -392,7 +397,7 @@ const addOrderDetails = async (formData, cartId, deliveryDates, existingUserId, 
       await updateStockAfterOrder(connection, cartInfo);
 
       let user = {};
-      if (existingUserId) {
+      if (existingUserId && !userCheck[0]?.pin_code) {
         user = {
           street: formData.street,
           district: formData.district,
@@ -400,15 +405,6 @@ const addOrderDetails = async (formData, cartId, deliveryDates, existingUserId, 
           landmark: formData.landmark,
           pin_code: formData.pincode,
         };
-        const updateAddressSql = `update tbl_user_details set street=?, district=?, state=?, landmark=?, pin_code=? where user_id=?`;
-        await runTransectionQuery(connection, updateAddressSql, [
-          formData.street,
-          formData.district,
-          formData.state,
-          formData.landmark,
-          formData.pincode,
-          existingUserId,
-        ]);
       }
 
       await runTransectionQuery(connection, "DELETE FROM tbl_cart WHERE cartId=?", [cartId]);

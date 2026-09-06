@@ -17,7 +17,7 @@ COPY --from=node-base /usr/local/bin/node /usr/local/bin/node
 COPY --from=node-base /usr/lib/libstdc++.so.6 /usr/lib/libstdc++.so.6
 COPY --from=node-base /usr/lib/libgcc_s.so.1 /usr/lib/libgcc_s.so.1
 COPY --from=deps /app /app
-COPY nginx.conf /etc/nginx/http.d/default.conf
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 

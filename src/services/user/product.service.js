@@ -81,8 +81,8 @@ const getShippingCostOnPin = async (pinCode) => {
     if (!normalizedPinCode || !franchise?.user_id) {
       return { status: false, msg: OUT_OF_SERVICE_MSG, responseObj: 0 };
     }
-    const sql = `SELECT shipping_cost FROM tbl_shipping_cost where pin_code=?`;
-    const list = await runMysqlQueryWithParam(sql, [normalizedPinCode]);
+    const sql = `SELECT shipping_cost FROM tbl_shipping_cost where user_id=? and pin_code=?`;
+    const list = await runMysqlQueryWithParam(sql, [franchise.user_id, normalizedPinCode]);
     let cost = 0;
     if (list.length) {
       cost = list[0].shipping_cost;

@@ -2,7 +2,7 @@
 set -e
 
 export PORT="${NODE_PORT:-3000}"
-sed -i "s/listen 8080;/listen ${NGINX_PORT:-8080};/" /etc/nginx/http.d/default.conf
+sed -i "s/listen 8080;/listen ${NGINX_PORT:-8080};/" /etc/nginx/conf.d/default.conf
 
 node index.js &
 node_pid="$!"
