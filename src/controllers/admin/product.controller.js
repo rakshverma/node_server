@@ -7,11 +7,9 @@ const addProduct = async (req, res) => {
     if (files.length === 0) {
       return response.send(res, 400, 0, "Please upload at least one product image.", {});
     } else {
-      console.log("REQ BODY = ", req.body);
       const checkValid = await productService.validateAddProducts(req.body, files);
       if (!checkValid.status) return response.send(res, 400, 0, checkValid.msg, {});
       const save = await productService.addProduct(req.body, files);
-      console.log("save = ", save);
       if (save.status) return response.send(res, 200, 1, save.msg, {});
       else return response.send(res, save.statusCode || 500, 0, save.msg, {});
     }
@@ -28,7 +26,6 @@ const editProduct = async (req, res) => {
     const checkValid = await productService.validateAddProducts(req.body, files);
     if (!checkValid.status) return response.send(res, 400, 0, checkValid.msg, {});
     const save = await productService.editProduct(req.body, files, productId);
-    console.log("save = ", save);
     if (save.status) return response.send(res, 200, 1, save.msg, {});
     else return response.send(res, save.statusCode || 500, 0, save.msg, {});
   } catch (e) {
@@ -45,7 +42,6 @@ const getAllProducts = async (req, res) => {
 };
 
 const priceeditinfo = async (req, res) => {
-  console.log("req.params = ", req.params);
   const { productId, distributerId } = req.params;
   const { user_id, role_id } = req;
   if (!productId || !distributerId) return response.send(res, 400, 0, "Invalid Request. Unable to fetch price info", {});
@@ -55,7 +51,6 @@ const priceeditinfo = async (req, res) => {
     user_id,
     role_id,
   });
-  console.log("validUser = ", validUser);
   if (!validUser.status) return response.send(res, 403, 0, validUser.msg, {});
   const priceInfo = await productService.getEditPriceInfo({
     productId,
@@ -79,7 +74,6 @@ const getProductPriceOnFranchise = async (req, res) => {
 const updateProductPrice = async (req, res) => {
   const { productId, distributerId } = req.params;
   const { user_id, role_id } = req;
-  console.log(req.body);
   const data = req.body;
   if (!distributerId || !productId) return response.send(res, 400, 0, "Invalid Request. Try again.", {});
   const updateProduct = await productService.updateProductPrice({ productId, distributerId, user_id, role_id, data });

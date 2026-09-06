@@ -131,7 +131,6 @@ const editProduct = async (data, files, productId) => {
       responseObj: {},
     };
   } catch (e) {
-    console.log(e);
     return {
       status: false,
       msg: "Please try again",
@@ -143,7 +142,6 @@ const editProduct = async (data, files, productId) => {
 const getProductList = async (user_id, role_id, franchiseId) => {
   try {
     const user = franchiseId && role_id === 1 ? franchiseId : user_id;
-    console.log("user = ", user, franchiseId, user_id);
     const sql = `SELECT p.*, 
                     IFNULL(pp.quantity_wise_price, null) as quantity_wise_price,
                     IFNULL(pp.is_available, 0) as is_available,
@@ -158,8 +156,6 @@ const getProductList = async (user_id, role_id, franchiseId) => {
                 ON p.id = pp.product_id
                 LEFT JOIN tbl_category c ON p.category_id = c.id ORDER BY p.id DESC`;
     const list = await runMysqlQueryWithParam(sql, [user]);
-    console.log("sql = ", sql);
-    console.log("list = ", list);
     let whereClause = `WHERE u.id=? and u.status!=3 and u.status!=4`;
     if (role_id === 1) whereClause = `WHERE u.id=? OR u.role_id=2 and u.status!=3 and u.status!=4`;
     //const franchiseSql = `SELECT * FROM tbl_users ${whereClause}`;
@@ -177,7 +173,6 @@ const getProductList = async (user_id, role_id, franchiseId) => {
       responseObj: { productList: list, franchiseList: franchiseList, franchiseId: user },
     };
   } catch (e) {
-    console.log("get product error= ", e);
     return {
       status: false,
       msg: "Unable to get product list. Please try again.",
@@ -195,11 +190,7 @@ const validateUserForPriceInfo = async (data) => {
       if (check[0].role_id !== role_id) return { status: false, msg: "User not authorized to edit price" };
       return { status: true, msg: "" };
     }
-    console.log("USER ID = ", user_id);
-    console.log("distributerId = ", distributerId);
-    console.log("role_id = ", role_id);
     if (user_id !== parseInt(distributerId)) {
-      console.log("came in heloooooooo");
       return { status: false, msg: "User not authorized to edit price" };
     } else return { status: true, msg: "" };
   } catch (e) {
@@ -230,7 +221,6 @@ WHERE user_id=?
 ) pp 
 ON p.id = pp.product_id WHERE p.id=?`;
     const productPrice = await runMysqlQueryWithParam(sql, [distributerId, productId]);
-    console.log("productPrice = ", productPrice);
     if (!productPrice.length) return { status: false, msg: "User not authorized to edit price" };
     const franchiseSql = `SELECT u.id, u.name, f.zip_codes, IF(u.role_id = 2, (SELECT f.franchise_name FROM tbl_franchise_details f WHERE u.id = f.user_id), NULL) AS franchise_name from tbl_users u LEFT JOIN tbl_franchise_details f ON u.id=f.user_id WHERE u.id=?`;
     const franchiseInfo = await runMysqlQueryWithParam(franchiseSql, [distributerId]);
@@ -262,7 +252,6 @@ const getProductPriceOnFranchise = async (id) => {
       responseObj: { productList: list },
     };
   } catch (e) {
-    console.log("get product error= ", e);
     return {
       status: false,
       msg: "Unable to get product list. Please try again.",
@@ -273,7 +262,6 @@ const getProductPriceOnFranchise = async (id) => {
 const updateProductPrice = async (info) => {
   try {
     const { productId, distributerId, user_id, role_id, data } = info;
-    console.log("edit data = ", productId, distributerId, user_id, role_id, data);
     const pinCodes = normalizePinCodes(data.pinCodes);
     const checkSql = `SELECT id from tbl_product_price WHERE product_id=? AND user_id=?`;
     const check = await runMysqlQueryWithParam(checkSql, [productId, distributerId]);
@@ -333,7 +321,6 @@ const updateProductPrice = async (info) => {
     if (insert) return { status: true, msg: "Price updated successfully." };
     else return { status: false, msg: "Unable to update price info. Please try again." };
   } catch (e) {
-    console.log(e);
     return { status: false, msg: "Please try again." };
   }
 };
@@ -354,7 +341,6 @@ const getProductReviews = async (role_id) => {
       return { status: false, msg: "User not authorized" };
     }
   } catch (e) {
-    console.log(e);
     return { status: false, msg: "Please try again." };
   }
 };
@@ -365,7 +351,6 @@ const updateProductStatus = async (productId, status) => {
     await runMysqlQueryWithParam(sql, [status, productId]);
     return { status: true, msg: "Product status updated successfully", responseObj: {} };
   } catch (e) {
-    console.log(e);
     return { status: false, msg: "Please try again.", responseObj: {} };
   }
 };
@@ -380,7 +365,6 @@ const deleteReviews = async (id, role_id, user_id) => {
       return { status: false, msg: "User not authorized" };
     }
   } catch (e) {
-    console.log(e);
     return { status: false, msg: "Please try again.", responseObj: {} };
   }
 };

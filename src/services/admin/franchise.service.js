@@ -59,7 +59,6 @@ const getFranchiseList = async (user_id, role_id) => {
       return { status: false, msg: "User Not Authorized" };
     }
   } catch (e) {
-    console.log(e);
     return { status: false, msg: "Please try again" };
   }
 };
@@ -70,7 +69,6 @@ const getDistrictList = async () => {
     const list = await runMysqlQuery(sql);
     return { status: true, msg: "", responseObj: list };
   } catch (e) {
-    console.log(e);
     return { status: false, msg: "Unable to fetch district list" };
   }
 };
@@ -90,7 +88,6 @@ const getPinCodeList = async (district) => {
     const zipCodesList = list.filter((obj) => addedZips.indexOf(obj.pin_code) === -1);
     return { status: true, msg: "", responseObj: zipCodesList };
   } catch (e) {
-    console.log(e);
     return { status: false, msg: "Unable to fetch pincode list" };
   }
 };
@@ -152,7 +149,6 @@ const addFranchise = async (data, user_id, role_id) => {
       return { status: false, msg: "Permission denied to add franchise", responseObj: {} };
     }
   } catch (e) {
-    console.log("add franchise error = ", e);
     return { status: false, msg: "Unable to add franchise. Please try again", responseObj: {} };
   }
 };
@@ -171,8 +167,6 @@ const editFranchise = async (data, user_id, role_id) => {
                         WHERE u.id != ? AND u.role_id = 2 AND
                         (u.email=? OR u.phone_number=? OR f.franchise_name=?)`;
       const check = await runMysqlQueryWithParam(checkSql, [editId, email, phone, franchiseName]);
-      console.log("check = ", check);
-      console.log("editId = ", editId, email, phone, franchiseName);
       if (check.length) {
         const err = [];
         check.forEach((element) => {
@@ -193,8 +187,6 @@ const editFranchise = async (data, user_id, role_id) => {
         if (status == 0) {
           newZipCodes = JSON.stringify([]);
         }
-
-        console.log("newZipCodes = ", newZipCodes);
         const insertFranchiseDetails = await runTransectionQuery(connection, franchiseSql, [
           franchiseName.trim(),
           state,
@@ -214,7 +206,6 @@ const editFranchise = async (data, user_id, role_id) => {
       return { status: false, msg: "Permission denied to add franchise", responseObj: {} };
     }
   } catch (e) {
-    console.log("add franchise error = ", e);
     return { status: false, msg: "Unable to edit franchise. Please try again", responseObj: {} };
   }
 };
@@ -241,7 +232,6 @@ const getAllFranchiseOnRole = async (role_id, user_id) => {
                          LEFT JOIN tbl_franchise_details f 
                          ON u.id = f.user_id where u.status !=3 and u.status != 4 and (u.role_id=1 or role_id=2) ORDER BY u.id ASC`;
       const select = await runMysqlQuery(sql);
-      console.log("select = ", select);
       return { status: true, msg: "Franchise list on role fetched successfully", responseObj: select };
     } else if (role_id === 2) {
       const sql = `SELECT u.id, u.name, u.status, u.email, u.phone_number, u.inserted_at, u.modified_at, f.franchise_name, f.state, f.district,f.zip_codes
@@ -249,13 +239,11 @@ const getAllFranchiseOnRole = async (role_id, user_id) => {
                          LEFT JOIN tbl_franchise_details f 
                          ON u.id = f.user_id where u.id =? and u.status !=3 and u.status!=4`;
       const select = await runMysqlQueryWithParam(sql, [user_id]);
-      console.log("select = ", select);
       return { status: true, msg: "Franchise list on role fetched successfully", responseObj: select };
     } else {
       return { status: false, msg: "Permission denied to add franchise", responseObj: {} };
     }
   } catch (e) {
-    console.log(e);
     return { status: false, msg: "Please try again" };
   }
 };
@@ -300,7 +288,6 @@ const updateShippingCostListOnId = async (formData, franchiseId, role_id, user_i
     if ((role_id !== 1 && role_id !== 2) || (role_id === 2 && user_id !== parseInt(franchiseId))) {
       return { status: false, msg: "Permission denied to add shipping cost", responseObj: [] };
     }
-    console.log("formData = ", formData);
     const values = formData?.pinCodes.map(({ pin_code, shipping_cost }) => [franchiseId, `${pin_code}`.trim(), Number(shipping_cost) || 0]);
     const sql = `
       INSERT INTO tbl_shipping_cost (user_id, pin_code, shipping_cost)
@@ -310,7 +297,6 @@ const updateShippingCostListOnId = async (formData, franchiseId, role_id, user_i
     await runMysqlQueryWithParam(sql, [values]);
     return { status: true, msg: "shipping cost updated successfully", responseObj: {} };
   } catch (e) {
-    console.log("ERROR -= ", e);
     return { status: false, msg: "Please try again" };
   }
 };
@@ -337,7 +323,6 @@ const getFranchiseDetailsOnId = async (franchiseId, role_id, user_id) => {
     const zipCodesList = list.filter((obj) => addedZips.indexOf(obj.pin_code) === -1);
     return { status: true, msg: "franchise details successfully", responseObj: { franchiseDetails: response[0], pinCodeList: zipCodesList } };
   } catch (e) {
-    console.log("ERROR -= ", e);
     return { status: false, msg: "Please try again" };
   }
 };

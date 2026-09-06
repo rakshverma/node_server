@@ -8,14 +8,12 @@ const addCategory = async (category) => {
     const normalizedCategory = category.trim();
     const sql = "SELECT id from tbl_category where LOWER(name) = LOWER(?)";
     const check = await runMysqlQueryWithParam(sql, [normalizedCategory]);
-    console.log("CHECK = ", check);
     if (check.length) {
       return { status: false, statusCode: 409, msg: "Category name already exists." };
     }
 
     const insertSql = "INSERT INTO tbl_category set name=?";
     const insert = await runMysqlQueryWithParam(insertSql, [normalizedCategory]);
-    console.log("INSERT = ", insert);
     if (insert) {
       return {
         status: true,
@@ -37,14 +35,12 @@ const editCategory = async (category, id) => {
     const normalizedCategory = category.trim();
     const sql = "SELECT id from tbl_category where LOWER(name) = LOWER(?) AND id!=?";
     const check = await runMysqlQueryWithParam(sql, [normalizedCategory, id]);
-    console.log("CHECK = ", check);
     if (check.length) {
       return { status: false, statusCode: 409, msg: "Category name already exists." };
     }
 
     const updateSql = "UPDATE tbl_category set name=? where id=?";
     const update = await runMysqlQueryWithParam(updateSql, [normalizedCategory, id]);
-    console.log("UPDATE = ", update);
     if (update) {
       return {
         status: true,
@@ -71,7 +67,6 @@ const getCategoryList = async () => {
       responseObj: list,
     };
   } catch (e) {
-    console.log("get category error= ", e);
     return {
       status: false,
       msg: "Unable to get category list. Please try again.",

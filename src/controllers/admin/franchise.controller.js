@@ -24,7 +24,6 @@ const getPinCodeList = async (req, res) => {
 const addFranchise = async (req, res) => {
   const { user_id, role_id } = req;
   const insert = await franchiseService.addFranchise(req.body, user_id, role_id);
-  console.log("insert = ", insert);
   if (insert.status) return response.send(res, 200, 1, insert.msg, {});
   else return response.send(res, 500, 0, insert.msg, {});
 };
@@ -32,7 +31,6 @@ const addFranchise = async (req, res) => {
 const editFranchise = async (req, res) => {
   const { user_id, role_id } = req;
   const insert = await franchiseService.editFranchise(req.body, user_id, role_id);
-  console.log("insert = ", insert);
   if (insert.status) return response.send(res, 200, 1, insert.msg, {});
   else return response.send(res, 500, 0, insert.msg, {});
 };

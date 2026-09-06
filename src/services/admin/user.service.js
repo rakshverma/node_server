@@ -51,7 +51,6 @@ const getCurrentUser = async (userId, roleId) => {
       return { status: false, msg: "Unable to get user info" };
     }
   } catch (e) {
-    console.log(e);
     return { status: false, msg: "Please try again" };
   }
 };
@@ -76,18 +75,15 @@ const getPinCodeOnUser = async (user_id, role_id, district) => {
       return { status: false, msg: "User Not Authorized" };
     }
   } catch (e) {
-    console.log("pin code user error = ", e);
     return { status: false, msg: "Unable to fetch pincode list" };
   }
 };
 
 const editProfile = async (data, user_id, role_id) => {
-  console.log("PROFILE DATA = ", data);
   try {
     const { name, phone, email, status, state, district, zipCodes, franchiseName } = data;
     const checksql = `SELECT id, phone_number, email FROM tbl_users WHERE id!=? AND (role_id=1 OR role_id=2 OR role_id=3) AND (email=? OR phone_number=?) `;
     const check = await runMysqlQueryWithParam(checksql, [user_id, email.trim(), phone]);
-    console.log("check result = ", check);
     if (check.length) {
       const err = [];
       check.forEach((element) => {
@@ -138,13 +134,11 @@ const editProfile = async (data, user_id, role_id) => {
       connection.release();
       return { status: true, msg: "Profile updated successfully.", responseObj: {} };
     } catch (e) {
-      console.log("PROFILE update error = ", e);
       await rollback(connection);
       connection.release();
       return { status: false, msg: "Unable to update profile. Please try again", responseObj: {} };
     }
   } catch (e) {
-    console.log("User Profile error = ", e);
     return { status: false, msg: "Please try again.", responseObj: {} };
   }
 };
@@ -161,7 +155,6 @@ const changePassword = async (data, user_id, role_id) => {
     const update = await runMysqlQueryWithParam(sql, [password, user_id]);
     return { status: true, msg: "Password updated successfully.", responseObj: {} };
   } catch (e) {
-    console.log("change password error = ", e);
     return { status: false, msg: "Please try again.", responseObj: {} };
   }
 };

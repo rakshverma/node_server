@@ -126,31 +126,21 @@ function convertBulkValues(sql, params) {
   };
 }
 
-function convertInArrayPlaceholders(sql, params) {
-  const convertedParams = [];
-  let paramIndex = 0;
-
-  const convertedSql = sql.replace(/\bIN\s*\(\s*\?\s*\)/gi, () => {
-    const value = params[paramIndex++];
-    convertedParams.push(Array.isArray(value) ? value : [value]);
-    return `= ANY($${convertedParams.length})`;
-  });
-
-  return { sql: convertedSql, params: convertedParams, consumed: paramIndex };
-}
-
 function convertPlaceholders(sql, params = []) {
   const bulk = convertBulkValues(sql, params);
   if (bulk) return bulk;
 
-  const inArray = convertInArrayPlaceholders(sql, params);
-  const remainingParams = params.slice(inArray.consumed);
-  let nextIndex = inArray.params.length;
+  const convertedParams = [];
+  const convertedSql = sql.replace(/\bIN\s*\(\s*\?\s*\)|\?/gi, (match) => {
+    const value = params[convertedParams.length];
+    const isInArrayPlaceholder = /\bIN\s*\(/i.test(match);
+    convertedParams.push(isInArrayPlaceholder ? (Array.isArray(value) ? value : [value]) : value);
+    return isInArrayPlaceholder ? `= ANY($${convertedParams.length})` : `$${convertedParams.length}`;
+  });
 
-  const convertedSql = inArray.sql.replace(/\?/g, () => `$${++nextIndex}`);
   return {
     sql: convertedSql,
-    params: [...inArray.params, ...remainingParams],
+    params: convertedParams,
   };
 }
 

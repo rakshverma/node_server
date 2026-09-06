@@ -10,7 +10,6 @@ const getAllCustomers = async (user_id, role_id) => {
       return { status: false, msg: "User not authorized" };
     }
   } catch (e) {
-    console.log(e);
     return { status: false, msg: "Please try again." };
   }
 };

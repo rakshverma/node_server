@@ -1,9 +1,18 @@
+function getJwtSecret(envName, fallback) {
+  const value = process.env[envName];
+  const isProduction = process.env.NODE_ENV === "production" || process.env.ENV === "prod";
+  if (isProduction && !value) {
+    throw new Error(`${envName} must be set for production deployments.`);
+  }
+  return value || fallback;
+}
+
 const config = {
   dev: {
     jwt: {
       // Read from env vars first; fall back to default dev secrets
-      secret: process.env.JWT_SECRET || "jhatkabytesecret",
-      refresh_secret: process.env.JWT_REFRESH_SECRET || "jhatkabytesecret",
+      secret: getJwtSecret("JWT_SECRET", "jhatkabytesecret"),
+      refresh_secret: getJwtSecret("JWT_REFRESH_SECRET", "jhatkabytesecret"),
       token_life: 2592000,       // 30 days in seconds
       refresh_token_life: 2592000 * 2,
     },
@@ -24,8 +33,8 @@ const config = {
   qa: {},
   prod: {
     jwt: {
-      secret: process.env.JWT_SECRET || "jhatkabytesecret",
-      refresh_secret: process.env.JWT_REFRESH_SECRET || "jhatkabytesecret",
+      secret: getJwtSecret("JWT_SECRET", "jhatkabytesecret"),
+      refresh_secret: getJwtSecret("JWT_REFRESH_SECRET", "jhatkabytesecret"),
       token_life: 2592000,
       refresh_token_life: 2592000 * 2,
     },

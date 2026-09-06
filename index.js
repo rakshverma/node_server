@@ -4,6 +4,7 @@ const compression = require("compression");
 const httpError = require("http-errors");
 const bodyParser = require("body-parser");
 const cors = require("cors");
+const rateLimit = require("express-rate-limit");
 const helmet = require("helmet");
 const morgan = require("morgan");
 const xss = require("xss-clean");
@@ -15,9 +16,11 @@ const allowedOrigins = (process.env.CORS_ORIGINS || "http://localhost:3005,http:
   .split(",")
   .map((origin) => origin.trim())
   .filter(Boolean);
+const allowAllOrigins =
+  allowedOrigins.includes("*") && process.env.CORS_ALLOW_ALL === "true" && process.env.NODE_ENV !== "production";
 const corsOptions = {
   origin(origin, callback) {
-    if (!origin || allowedOrigins.includes("*") || allowedOrigins.includes(origin)) {
+    if (!origin || allowAllOrigins || allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
     return callback(new Error("Not allowed by CORS"));
@@ -26,6 +29,24 @@ const corsOptions = {
   allowedHeaders: ["Origin", "X-Requested-With", "Content-Type", "Accept", "Authorization", "x-access-token"],
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
 };
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 50,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { status: false, message: "Too many attempts. Please try again later." },
+});
+
+function isSafeStoragePath(filePath) {
+  return (
+    typeof filePath === "string" &&
+    filePath.length <= 500 &&
+    !filePath.startsWith("/") &&
+    !filePath.includes("\\") &&
+    !filePath.split("/").includes("..") &&
+    /^[a-zA-Z0-9/_.,@ -]+$/.test(filePath)
+  );
+}
 
 app.listen(port, () => {
   console.log("listening on port ", port);
@@ -44,10 +65,11 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cors(corsOptions));
 app.options("*", cors(corsOptions));
 app.use(morgan("combined"));
+app.use(["/admin/auth/login", "/admin/auth/register", "/admin/auth/forgotpassword", "/auth/login", "/auth/register", "/auth/forgotpassword"], authLimiter);
 app.get(["/uploads/*", "/upload/*"], async (req, res) => {
   try {
     const filePath = req.params[0];
-    if (!filePath) return res.status(404).send({ error: "File not found" });
+    if (!isSafeStoragePath(filePath)) return res.status(404).send({ error: "File not found" });
     const signedUrl = await createSignedUrl(filePath);
     return res.redirect(signedUrl);
   } catch (error) {

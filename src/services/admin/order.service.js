@@ -82,7 +82,6 @@ const getAllOrders = async (user_id, role_id) => {
       return { status: false, msg: "User Not Authorized" };
     }
   } catch (e) {
-    console.log(e);
     return { status: false, msg: "Please try again" };
   }
 };
@@ -141,7 +140,6 @@ const getAllOrdersByFranchise = async (user_id, role_id, franchiseId) => {
       return { status: false, msg: "User Not Authorized" };
     }
   } catch (e) {
-    console.log(e);
     return { status: false, msg: "Please try again" };
   }
 };
@@ -149,7 +147,6 @@ const getAllOrdersByFranchise = async (user_id, role_id, franchiseId) => {
 const getDeleveryboyListOnFranchise = async (user_id, role_id, franchiseId) => {
   try {
     if (role_id !== 1 && role_id !== 2) return { status: false, msg: "User Not Authorized" };
-    console.log("heloooooooo");
     const sql = `SELECT u.id, u.email, u.phone_number, u.name, COUNT(o.delevery_boy_id) AS count
                   FROM tbl_users u
                   LEFT JOIN tbl_delevery_boy_details d ON u.id=d.user_id
@@ -159,7 +156,6 @@ const getDeleveryboyListOnFranchise = async (user_id, role_id, franchiseId) => {
     const list = await runMysqlQueryWithParam(sql, [franchiseId]);
     return { status: true, msg: "delevery boy list fetched successfully on franchise", responseObj: list };
   } catch (e) {
-    console.log(e);
     return { status: false, msg: "Please try again" };
   }
 };
@@ -189,7 +185,6 @@ const validateUpdatingOrder = async (data) => {
       return { status: false, msg: "User Not Authorized" };
     }
   } catch (e) {
-    console.log(e);
     return { status: false, msg: "Please try again." };
   }
 };
@@ -200,7 +195,6 @@ const updateDeleveryboyWithStatus = async ({ deleveryboyId, status, orderId }) =
     const update = await runMysqlQueryWithParam(sql, [deleveryboyId, status, orderId]);
     return { status: true, msg: "Order updated successfully" };
   } catch (e) {
-    console.log(e);
     return { status: false, msg: "Please try again." };
   }
 };
@@ -230,7 +224,6 @@ const getOrderOnID = async (user_id, role_id, id) => {
       return { status: false, msg: "User not authorized." };
     }
   } catch (e) {
-    console.log(e);
     return { status: false, msg: "Please try again." };
   }
 };
@@ -259,7 +252,6 @@ const updateOrderDeliveryStatus = async (user_id, role_id, id, status) => {
               }
             });
           }
-          console.log("isMainOrderComplete = ", isMainOrderComplete);
           if (isMainOrderComplete) {
             await runMysqlQueryWithParam(`update tbl_orders set status=? where id=?`, [ORDER_STATUS.COMPLETED, check[0].order_id]);
           }
@@ -286,7 +278,6 @@ const updateOrderDeliveryStatus = async (user_id, role_id, id, status) => {
             }
           });
         }
-        console.log("isMainOrderComplete = ", isMainOrderComplete);
         if (isMainOrderComplete) {
           await runMysqlQueryWithParam(`update tbl_orders set status=? where id=?`, [ORDER_STATUS.COMPLETED, check[0].order_id]);
         }
@@ -297,7 +288,6 @@ const updateOrderDeliveryStatus = async (user_id, role_id, id, status) => {
       return { status: false, msg: "User not authorized to update." };
     }
   } catch (e) {
-    console.log(e);
     return { status: false, msg: "Please try again." };
   }
 };
@@ -324,7 +314,6 @@ const getFranchiseListOnOrder = async (user_id, role_id, orderId) => {
       return { status: false, msg: "User not authorized to update." };
     }
   } catch (e) {
-    console.log(e);
     return { status: false, msg: "Please try again." };
   }
 };
@@ -340,7 +329,6 @@ const updateDeliveryBoyOnOrder = async (user_id, role_id, boyId, orderId, orderD
       return { status: false, msg: "User not authorized to update." };
     }
   } catch (e) {
-    console.log(e);
     return { status: false, msg: "Please try again." };
   }
 };
@@ -364,7 +352,6 @@ const cancelOrder = async (user_id, role_id, id) => {
       return { status: false, msg: "User not authorized to update." };
     }
   } catch (e) {
-    console.log(e);
     return { status: false, msg: "Please try again." };
   }
 };
@@ -388,13 +375,11 @@ const cancelOrderItems = async (user_id, role_id, orderIds) => {
       return { status: false, msg: "User not authorized to update." };
     }
   } catch (e) {
-    console.log(e);
     return { status: false, msg: "Please try again." };
   }
 };
 
 const cancelOrderOnItemId = async (user_id, role_id, orderId, itemId, mainOrderCancel) => {
-  console.log("INNNNNN = ", orderId, itemId, mainOrderCancel);
   try {
     if (role_id === 1 || role_id === 2) {
       if (role_id === 2) {
@@ -407,7 +392,6 @@ const cancelOrderOnItemId = async (user_id, role_id, orderId, itemId, mainOrderC
 
       let itemListSql = `select od.id, o.franchise_id, od.price, od.count, od.delivery_status, o.shipping_cost, od.shipping_cost as original_shipping, od.delivery_date from tbl_order_details od left join tbl_orders o on od.order_id=o.id where od.order_id=?`;
       let itemList = await runMysqlQueryWithParam(itemListSql, [orderId]);
-      console.log("itemList = ", itemList);
 
       let totalPrice = 0;
       let isDifferentDate = false;
@@ -439,7 +423,6 @@ const cancelOrderOnItemId = async (user_id, role_id, orderId, itemId, mainOrderC
       }
 
       // console.log("totalPrice = ", totalPrice);
-      console.log("mainCancel = ", mainCancel);
       // return;
 
       if (!mainCancel) {
@@ -456,7 +439,6 @@ const cancelOrderOnItemId = async (user_id, role_id, orderId, itemId, mainOrderC
       return { status: false, msg: "User not authorized to update." };
     }
   } catch (e) {
-    console.log(e);
     return { status: false, msg: "Please try again." };
   }
 };
@@ -480,7 +462,6 @@ const completeOrderItems = async (user_id, role_id, orderIds) => {
       return { status: false, msg: "User not authorized to update." };
     }
   } catch (e) {
-    console.log(e);
     return { status: false, msg: "Please try again." };
   }
 };
@@ -504,7 +485,6 @@ const processOrderItems = async (user_id, role_id, orderIds) => {
       return { status: false, msg: "User not authorized to update." };
     }
   } catch (e) {
-    console.log(e);
     return { status: false, msg: "Please try again." };
   }
 };
@@ -526,7 +506,6 @@ const updateAdminNotes = async (user_id, role_id, orderId, adminNotes) => {
       return { status: false, msg: "User not authorized to update." };
     }
   } catch (e) {
-    console.log(e);
     return { status: false, msg: "Please try again." };
   }
 };
@@ -548,7 +527,6 @@ const updateDeliveryDate = async (user_id, role_id, id, itemId, date) => {
       return { status: false, msg: "User not authorized to update." };
     }
   } catch (e) {
-    console.log(e);
     return { status: false, msg: "Please try again." };
   }
 };

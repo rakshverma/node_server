@@ -37,6 +37,15 @@ function buildReceiptUrl(orderId) {
   return `/uploads/invoices/${Number(orderId) + 1000}_invoice.pdf`;
 }
 
+function escapeHtml(value) {
+  return `${value || ""}`
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 const ORDER_STATUS = {
   PROCESSING: 1,
   COMPLETED: 2,
@@ -128,6 +137,10 @@ async function ensureOrderAddressBookTable(connection) {
       label varchar(60) default 'Home',
       recipient_name varchar(80),
       phone_number varchar(12),
+      house_apartment text,
+      street_name text,
+      locality varchar(100),
+      city varchar(80),
       street text,
       district varchar(45),
       state varchar(45),
@@ -139,6 +152,10 @@ async function ensureOrderAddressBookTable(connection) {
     )`,
     []
   );
+  await runTransectionQuery(connection, `ALTER TABLE public.tbl_user_addresses ADD COLUMN IF NOT EXISTS house_apartment text`, []);
+  await runTransectionQuery(connection, `ALTER TABLE public.tbl_user_addresses ADD COLUMN IF NOT EXISTS street_name text`, []);
+  await runTransectionQuery(connection, `ALTER TABLE public.tbl_user_addresses ADD COLUMN IF NOT EXISTS locality varchar(100)`, []);
+  await runTransectionQuery(connection, `ALTER TABLE public.tbl_user_addresses ADD COLUMN IF NOT EXISTS city varchar(80)`, []);
   await runTransectionQuery(connection, `CREATE INDEX IF NOT EXISTS tbl_user_addresses_user_index ON public.tbl_user_addresses (user_id)`, []);
   await runTransectionQuery(connection, `CREATE UNIQUE INDEX IF NOT EXISTS tbl_user_addresses_one_default ON public.tbl_user_addresses (user_id) WHERE is_default = true`, []);
 }
@@ -146,10 +163,19 @@ async function ensureOrderAddressBookTable(connection) {
 async function saveCheckoutAddressAsDefault(connection, userId, formData) {
   await ensureOrderAddressBookTable(connection);
   const existing = await runTransectionQuery(connection, "SELECT id FROM tbl_user_addresses WHERE user_id=? AND is_default=true LIMIT 1", [userId]);
+  const houseApartment = `${formData.houseApartment || formData.house_apartment || ""}`.trim();
+  const streetName = `${formData.streetName || formData.street_name || ""}`.trim();
+  const locality = `${formData.locality || ""}`.trim();
+  const city = `${formData.city || formData.district || ""}`.trim();
+  const street = `${formData.street || [houseApartment, streetName, locality].filter(Boolean).join(", ")}`.trim();
   const params = [
     formData.name || null,
     formData.phone || null,
-    formData.street,
+    houseApartment || null,
+    streetName || null,
+    locality || null,
+    city || null,
+    street,
     formData.district,
     formData.state,
     formData.landmark,
@@ -160,7 +186,7 @@ async function saveCheckoutAddressAsDefault(connection, userId, formData) {
     await runTransectionQuery(
       connection,
       `UPDATE tbl_user_addresses
-       SET label='Home', recipient_name=?, phone_number=?, street=?, district=?, state=?, landmark=?, pin_code=?, updated_at=now()
+       SET label='Home', recipient_name=?, phone_number=?, house_apartment=?, street_name=?, locality=?, city=?, street=?, district=?, state=?, landmark=?, pin_code=?, updated_at=now()
        WHERE user_id=? AND is_default=true`,
       params
     );
@@ -169,8 +195,8 @@ async function saveCheckoutAddressAsDefault(connection, userId, formData) {
     await runTransectionQuery(
       connection,
       `INSERT INTO tbl_user_addresses
-       (label, recipient_name, phone_number, street, district, state, landmark, pin_code, user_id, is_default)
-       VALUES ('Home',?,?,?,?,?,?,?,?,true)`,
+       (label, recipient_name, phone_number, house_apartment, street_name, locality, city, street, district, state, landmark, pin_code, user_id, is_default)
+       VALUES ('Home',?,?,?,?,?,?,?,?,?,?,?,?,true)`,
       params
     );
   }
@@ -311,8 +337,6 @@ const addOrderDetails = async (formData, cartId, deliveryDates, existingUserId, 
         order = await runTransectionQuery(connection, orderSql, [userId, ...orderArr]);
         let userDataSql = "";
         let userParams = [];
-        console.log("userCheck[0].pin_code = ", userCheck[0].pin_code);
-        console.log("formData.pincode = ", formData.pincode);
         if (!userCheck[0].pin_code) {
           userDataSql = `UPDATE tbl_user_details SET street=?, district=?, state=?, landmark=?, pin_code=? WHERE user_id=?`;
           userParams = [...userDataArr, userId];
@@ -357,8 +381,6 @@ const addOrderDetails = async (formData, cartId, deliveryDates, existingUserId, 
       await updateStockAfterOrder(connection, cartInfo);
 
       let user = {};
-      console.log("userCheck = ", userCheck);
-      console.log("existingUserId = ", existingUserId);
       if (existingUserId) {
         user = {
           street: formData.street,
@@ -381,7 +403,6 @@ const addOrderDetails = async (formData, cartId, deliveryDates, existingUserId, 
       await runTransectionQuery(connection, "DELETE FROM tbl_cart WHERE cartId=?", [cartId]);
       await commit(connection);
       createAndSendOrderReceipt(orderArr, cartInfo, orderId, formData.email, deliveryDates).catch((e) => {
-        console.log("Background order receipt failed:", e);
       });
       return {
         status: true,
@@ -393,15 +414,12 @@ const addOrderDetails = async (formData, cartId, deliveryDates, existingUserId, 
         },
       };
     } catch (e) {
-      console.log("ERROR1 = ", e);
       await rollback(connection);
       return { status: false, msg: "Unable to place order. Please try again.", responseObj: {} };
     } finally {
-      console.log("came in connection release");
       connection.release();
     }
   } catch (e) {
-    console.log("ERROR2 = ", e);
     return { status: false, msg: "Unable to place order. Please try again.", responseObj: {} };
   }
 };
@@ -429,23 +447,16 @@ const getOrderList = async (refId, user_id, role_id, pid) => {
       whereClause = `WHERE o.user_id=? AND o.id=?`;
       params = [user_id, pid];
     }
-
-    console.log("PARAMS = ", params);
     const sql = `SELECT o.*, u.email FROM tbl_orders o LEFT JOIN tbl_users u ON o.user_id=u.id ${whereClause} ORDER BY o.id DESC`;
     const orders = await runMysqlQueryWithParam(sql, params);
-    console.log("sql = ", sql);
-    console.log("orders = ", orders);
     const orderList = [];
     if (orders.length) {
       const orderIds = orders.map((item) => {
-        console.log("ITEM = ", item);
         return item.id;
       });
       const orderIdsString = orderIds.join(",");
       const listSql = `SELECT o.*, p.name, p.images FROM tbl_order_details as o LEFT JOIN tbl_products p ON o.product_id=p.id WHERE o.order_id IN (${orderIdsString})`;
       const list = await runMysqlQuery(listSql);
-      console.log("listSql = ", listSql);
-      console.log("list = ", list);
       orders.forEach((item) => {
         const products = list.filter((o) => o.order_id === item.id);
         orderList.push({ ...item, itemList: products });
@@ -478,20 +489,18 @@ const getReviewList = async (user_id) => {
     const list = await runMysqlQueryWithParam(sql, [user_id]);
     return { status: true, msg: "review fetched successfully", responseObj: list };
   } catch (e) {
-    console.log("error = ", e);
     return { status: false, msg: "Unable to load review. Please try again", responseObj: [] };
   }
 };
 
 const deleteReview = async (id, user_id) => {
   try {
-    const delSql = `DELETE FROM tbl_product_review WHERE id=?`;
-    await runMysqlQueryWithParam(delSql, id);
+    const delSql = `DELETE FROM tbl_product_review WHERE id=? AND user_id=?`;
+    await runMysqlQueryWithParam(delSql, [id, user_id]);
     const sql = `SELECT pr.*, p.name FROM tbl_product_review pr LEFT JOIN tbl_products p ON pr.product_id=p.id WHERE pr.user_id=?`;
     const list = await runMysqlQueryWithParam(sql, [user_id]);
     return { status: true, msg: "review fetched successfully", responseObj: list };
   } catch (e) {
-    console.log("error = ", e);
     return { status: false, msg: "Unable to delete review. Please try again", responseObj: [] };
   }
 };
@@ -503,13 +512,11 @@ const getOrderItemOnId = async (refId) => {
     }
     let whereClause = `WHERE o.ref_no=?`;
     let params = [`JB${refId}`];
-    console.log("PARAMS = ", params);
     const sql = `SELECT o.*, u.email FROM tbl_orders o LEFT JOIN tbl_users u ON o.user_id=u.id ${whereClause} ORDER BY o.id DESC`;
     const orders = await runMysqlQueryWithParam(sql, params);
     const orderList = [];
     if (orders.length) {
       const orderIds = orders.map((item) => {
-        console.log("ITEM = ", item);
         return item.id;
       });
       const orderIdsString = orderIds.join(",");
@@ -583,13 +590,11 @@ const cancelFutureOrder = async (orderId, user_id, role_id) => {
       return { status: true, msg: "Future order canceled successfully", responseObj: {} };
     } catch (e) {
       await rollback(connection);
-      console.log(e);
       return { status: false, msg: "Unable to cancel order. Please try again.", responseObj: {} };
     } finally {
       connection.release();
     }
   } catch (e) {
-    console.log(e);
     return { status: false, msg: "Unable to cancel order. Please try again.", responseObj: {} };
   }
 };
@@ -602,13 +607,13 @@ function getOrderProductHtml(cartInfo, deliveryDates, list) {
     const { name, quantity, price, unit, count, delivery_date } = item;
     html += `<tr>
     <td className="text-start">
-      <a href="shop-details.html">${name}</a>
+      <a href="shop-details.html">${escapeHtml(name)}</a>
       <p className="mb-0">
-        quantity: ${quantity}${unit} x ${count}
+        quantity: ${escapeHtml(quantity)}${escapeHtml(unit)} x ${escapeHtml(count)}
       </p>
     </td>
-    <td className="text-end">${delivery_date}</td>
-    <td className="text-end">₹${(Number(price) * Number(count)).toFixed(2)}</td>
+    <td className="text-end">${escapeHtml(delivery_date)}</td>
+    <td className="text-end">₹${escapeHtml((Number(price) * Number(count)).toFixed(2))}</td>
   </tr>`;
   });
 
@@ -639,7 +644,6 @@ async function createAndSendOrderReceipt(orderArr, cartInfo, orderId, email, del
     try {
       await sendOrderMail(email, orderId, receipt);
     } catch (e) {
-      console.log("Order receipt email failed:", e);
     }
     return receipt;
   } finally {

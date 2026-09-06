@@ -21,7 +21,6 @@ async function main() {
   const schemaSql = fs.readFileSync(schemaPath, "utf8");
 
   await pool.query(schemaSql);
-  console.log("Supabase schema applied successfully.");
 }
 
 main()

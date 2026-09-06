@@ -26,7 +26,6 @@ async function resetData() {
   }
 
   await runMysqlQuery(`TRUNCATE TABLE ${tables.join(", ")} RESTART IDENTITY CASCADE`);
-  console.log(`Reset complete. Cleared ${tables.length} application tables.`);
 }
 
 resetData()

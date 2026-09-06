@@ -4,7 +4,11 @@ const response = require("../../utils/commonResponse");
 const addOrderDetails = async (req, res) => {
   const { formData, cartId, deliveryDates, userId, isPincodeChanged, shipping_cost } = req.body;
   if (!cartId) return response.send(res, 500, 0, "Unable to confirm order. Please check your shopping cart.", {});
-  const order = await orderService.addOrderDetails(formData, cartId, deliveryDates, userId, isPincodeChanged, shipping_cost);
+  const requestedUserId = Number(userId || 0);
+  if (requestedUserId && (!req.user_id || Number(req.user_id) !== requestedUserId || Number(req.role_id) !== 4)) {
+    return response.send(res, 401, 0, "Unable to place order. Please login again.", {});
+  }
+  const order = await orderService.addOrderDetails(formData, cartId, deliveryDates, requestedUserId ? req.user_id : null, isPincodeChanged, shipping_cost);
   if (order.status) response.send(res, 200, 1, order.msg, order.responseObj);
   else response.send(res, 500, 0, order.msg, order.responseObj);
 };

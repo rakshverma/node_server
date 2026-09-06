@@ -34,7 +34,6 @@ const getAllDeleveryBoyList = async (user_id, role_id) => {
       return { status: false, msg: "User Not Authorized" };
     }
   } catch (e) {
-    console.log(e);
     return { status: false, msg: "Please try again" };
   }
 };
@@ -83,14 +82,12 @@ const addDeleveryBoy = async (data, user_id, role_id) => {
         await rollback(connection);
         return { status: false, msg: "Unable to add delivery boy. Please try again", responseObj: {} };
       } finally {
-        console.log("came in connection release");
         connection.release();
       }
     } else {
       return { status: false, msg: "Permission denied to add delivery boy", responseObj: {} };
     }
   } catch (e) {
-    console.log("deliveryboy error = ", e);
     return { status: false, msg: "Please try again.", responseObj: {} };
   }
 };
@@ -111,7 +108,6 @@ const editDeleveryBoy = async (data, editId, user_id, role_id) => {
                         WHERE 
                         u.id != ? and (u.email=? OR u.phone_number=?)`;
       const check = await runMysqlQueryWithParam(checkSql, [editId, email, phone]);
-      console.log("check = ", check);
       if (check.length) {
         const err = [];
         check.forEach((element) => {
@@ -133,7 +129,6 @@ const editDeleveryBoy = async (data, editId, user_id, role_id) => {
         await rollback(connection);
         return { status: false, msg: "Unable to update delivery boy. Please try again", responseObj: {} };
       } finally {
-        console.log("came in connection release");
         connection.release();
       }
     } else {
@@ -170,7 +165,6 @@ const deliveryList = async (user_id, role_id, date) => {
 };
 
 const getDeliveryBoyOnId = async (user_id, role_id, id) => {
-  console.log("idid = ", id);
   try {
     if (role_id != 1 && role_id != 2) {
       return { status: false, msg: "User not authorized", responseObj: [] };
@@ -183,7 +177,6 @@ const getDeliveryBoyOnId = async (user_id, role_id, id) => {
     }
     let sql = `select u.*, d.user_id, d.franchise_id, d.state, d.district, f.franchise_name from tbl_users u left join tbl_delevery_boy_details d on u.id=d.user_id left join tbl_franchise_details f on d.franchise_id=f.user_id ${whereClause}`;
     const response = await runMysqlQueryWithParam(sql, params);
-    console.log("responseresponse = ", response);
     let data = {};
     if (response.length) {
       data = response[0];

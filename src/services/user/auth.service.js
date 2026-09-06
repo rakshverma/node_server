@@ -15,6 +15,15 @@ const {
 
 const normalizeSecretCode = (value) => `${value || ""}`.trim().toLowerCase();
 
+function escapeHtml(value) {
+  return `${value || ""}`
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 const validateSecretCode = (secretCode) => {
   const normalized = normalizeSecretCode(secretCode);
   return normalized.length >= 4 && normalized.length <= 60;
@@ -30,7 +39,6 @@ const ensureSecretCodeColumn = async () => {
       await runMysqlQuery("ALTER TABLE tbl_users ADD COLUMN IF NOT EXISTS secret_code varchar(100) DEFAULT NULL");
     }
   } catch (e) {
-    console.log("Secret code column check failed:", e);
     throw e;
   }
 };
@@ -48,7 +56,6 @@ const register = async (data) => {
     await ensureSecretCodeColumn();
     const checkSql = `SELECT email, phone_number from tbl_users WHERE role_id=4 AND (email=? OR phone_number=?)`;
     const check = await runMysqlQueryWithParam(checkSql, [email.toLowerCase().trim(), phone.trim()]);
-    console.log("check = ", check);
     if (check.length) {
       const err = [];
       check.forEach((el) => {
@@ -89,17 +96,15 @@ const register = async (data) => {
         token: newToken,
         refreshToken: refreshToken,
       };
-      sendRegistrationEmail(email.toLowerCase().trim(), name.trim()).catch((e) => console.log("Registration email failed:", e));
+      sendRegistrationEmail(email.toLowerCase().trim(), name.trim()).catch(() => {});
       return { status: true, msg: "Thank you! for registering with us", responseObj: user };
     } catch (e) {
-      console.log(e);
       await rollback(connection);
       return { status: false, statusCode: 500, msg: "Please try again.", responseObj: {} };
     } finally {
       connection.release();
     }
   } catch (e) {
-    console.log(e);
     return { status: false, statusCode: 500, msg: "Please try again.", responseObj: {} };
   }
 };
@@ -107,7 +112,7 @@ const register = async (data) => {
 async function sendRegistrationEmail(email, name) {
   const subject = "Welcome to Jhatka Bytes!";
   const message = `<p>
-    Welcome, ${name}!<br>
+    Welcome, ${escapeHtml(name)}!<br>
   </p>
   <p>
   <p style="padding-top: 20px">Thank You! for registering with us.</p>
@@ -168,7 +173,6 @@ const doLogin = async (emailId, password) => {
     };
     return { status: true, msg: "User loggedin successfully", responseObj: user };
   } catch (e) {
-    console.log(e);
     return { status: false, statusCode: 500, msg: "Please try again", responseObj: {} };
   }
 };
@@ -193,7 +197,6 @@ const doForgotPassword = async ({ email, secretCode, password }) => {
     await runMysqlQueryWithParam(updateSql, [hashedPassword, email.trim().toLowerCase()]);
     return { status: true, msg: "Password reset successfully. Please sign in with your new password.", responseObj: {} };
   } catch (e) {
-    console.log(e);
     return { status: false, msg: "Please try again", responseObj: {} };
   }
 };

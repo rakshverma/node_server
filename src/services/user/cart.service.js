@@ -56,7 +56,6 @@ const getCartDetails = async ({ cartId, userId }) => {
     const res = await runMysqlQueryWithParam(sql, param);
     return { status: true, msg: "cart details fetched successfully", responseObj: res };
   } catch (e) {
-    console.log(e);
     return { status: false, msg: "Unable to get cart details. Please try again", responseObj: [] };
   }
 };
@@ -74,10 +73,8 @@ const getCartProductDetails = async (cartId) => {
                   ON c.productId = pp.product_id
                   WHERE c.cartId=? AND c.franchiseId = pp.user_id`;
     const res = await runMysqlQueryWithParam(sql, [cartId]);
-    console.log("RESPONSE = ", res);
     return { status: true, msg: "cart products details fetched successfully", responseObj: res };
   } catch (e) {
-    console.log(e);
     return { status: false, msg: "Unable to get cart details. Please try again", responseObj: [] };
   }
 };

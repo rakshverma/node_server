@@ -11,7 +11,6 @@ const addCartDetails = async (req, res) => {
 
 const getCartDetails = async (req, res) => {
   const { cartId, userId } = req.params;
-  console.log("kuku", cartId, userId);
   if (!cartId && !userId) return response.send(res, 500, 0, "Unable to get cart details.", {});
   const getCart = await cartService.getCartDetails({ cartId, userId });
   if (getCart.status) response.send(res, 200, 1, getCart.msg, getCart.responseObj);
@@ -27,7 +26,6 @@ const updateCartDetails = async (req, res) => {
 };
 
 const getCartProductDetails = async (req, res) => {
-  console.log("cccccc = ");
   const { cartId } = req.params;
   if (!cartId) return response.send(res, 500, 0, "Unable to get cart details.", []);
   const getCart = await cartService.getCartProductDetails(cartId);

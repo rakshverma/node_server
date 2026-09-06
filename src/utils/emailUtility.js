@@ -35,11 +35,9 @@ const sendEmail = (to, subject, htmlContent, attachments) => {
   return transporter
     .sendMail(mailOptions)
     .then((info) => {
-      console.log("Email sent:", info.response);
       return info;
     })
     .catch((error) => {
-      console.log("Error sending email:", error);
       throw error;
     });
 };

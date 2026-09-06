@@ -16,10 +16,7 @@ const editCategory = async (req, res) => {
 
   if (!id || !category)
     return response.send(res, 400, 0, "Request is not valid", {});
-
-  console.log("id = ", id);
   const save = await categoryService.editCategory(category, id);
-  console.log("save = ", save);
   if (save.status) return response.send(res, 200, 1, save.msg, {});
   else response.send(res, save.statusCode || 500, 0, save.msg, {});
 };

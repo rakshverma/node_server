@@ -12,7 +12,6 @@ const register = async (req, res) => {
 };
 
 const login = async (req, res) => {
-  console.log("req.body = ", req.body);
   const { email, password } = req.body;
   const validateLogin = await authService.validateLogin({ email, password });
   if (!validateLogin.status) return response.send(res, 400, 0, validateLogin.msg, {});
@@ -22,7 +21,6 @@ const login = async (req, res) => {
 };
 
 const forgotPassword = async (req, res) => {
-  console.log("req.body = ", req.body);
   const { email } = req.body;
   const validate = await authService.validateForgotPassword({ email });
   if (!validate.status) return response.send(res, 400, 0, validate.msg, {});

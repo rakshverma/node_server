@@ -74,7 +74,6 @@ async function main() {
     failed = true;
   } else {
     try {
-      console.log(await verifyStorage());
     } catch (error) {
       console.error(`Storage check failed: ${error.message}`);
       failed = true;
@@ -85,7 +84,6 @@ async function main() {
     console.error("Database check skipped: SUPABASE_DB_URL, SUPABASE_POSTGRES_URL, or DATABASE_URL is required");
     if (hasAnyEnv(["SUPABASE_URL"]) && hasAnyEnv(["SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_SECRET_KEY"])) {
       try {
-        console.log(await verifyTablesViaApi());
       } catch (error) {
         console.error(`Supabase API table check failed: ${error.message}`);
       }
@@ -93,7 +91,6 @@ async function main() {
     failed = true;
   } else {
     try {
-      console.log(await verifyDatabase());
     } catch (error) {
       console.error(`Database check failed: ${error.message}`);
       failed = true;
@@ -101,7 +98,6 @@ async function main() {
   }
 
   if (failed) process.exit(1);
-  console.log("Supabase verification passed");
 }
 
 main();

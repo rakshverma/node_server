@@ -14,7 +14,6 @@ const getCategoryList = async () => {
     const list = await runMysqlQuery(sql);
     return { status: true, msg: "Category list fetched successfully", responseObj: list };
   } catch (e) {
-    console.log(e);
     return { status: false, msg: "Unable to get category list", responseObj: [] };
   }
 };
@@ -33,13 +32,11 @@ const getFranchiseForPincode = async (pinCode) => {
 const getProductList = async (pinCode) => {
   try {
     const normalizedPinCode = `${pinCode || ""}`.trim();
-    console.log("pinCode = ", normalizedPinCode);
     const franchise = await getFranchiseForPincode(normalizedPinCode);
     if (!normalizedPinCode || !franchise?.user_id) {
       return { status: false, msg: OUT_OF_SERVICE_MSG, responseObj: [] };
     }
     const franchiseId = franchise.user_id;
-    console.log("franchise = ", franchise);
     const priceJoin = `SELECT * FROM tbl_product_price WHERE user_id=?`;
     const params = [franchiseId];
     const sql = `SELECT p.*, 
@@ -57,7 +54,6 @@ const getProductList = async (pinCode) => {
     const list = await runMysqlQueryWithParam(sql, params);
     return { status: true, msg: "Product list fetched successfully", responseObj: list };
   } catch (e) {
-    console.log(e);
     return { status: false, msg: "Unable to get product list", responseObj: [] };
   }
 };
@@ -74,7 +70,6 @@ const getProductReview = async (productId) => {
     const list = await runMysqlQueryWithParam(sql, paramArray);
     return { status: true, msg: "products reviews fetched successfully", responseObj: list };
   } catch (e) {
-    console.log(e);
     return { status: false, msg: "Unable to load product reviews. Please try again.", responseObj: [] };
   }
 };
@@ -88,14 +83,12 @@ const getShippingCostOnPin = async (pinCode) => {
     }
     const sql = `SELECT shipping_cost FROM tbl_shipping_cost where pin_code=?`;
     const list = await runMysqlQueryWithParam(sql, [normalizedPinCode]);
-    console.log("list= ", list, normalizedPinCode);
     let cost = 0;
     if (list.length) {
       cost = list[0].shipping_cost;
     }
     return { status: true, msg: "shipping cost fetched successfully", responseObj: cost };
   } catch (e) {
-    console.log(e);
     return { status: false, msg: "Unable to fetch shipping cost for this pin code. Please verify Supabase database setup.", responseObj: 0 };
   }
 };

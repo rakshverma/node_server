@@ -30,7 +30,6 @@ async function main() {
       hashedPassword,
       existing[0].id,
     ]);
-    console.log(`Admin user updated: ${email}`);
     return;
   }
 
@@ -43,8 +42,6 @@ async function main() {
     "INSERT INTO tbl_franchise_details SET user_id=?, franchise_name=?, state=?, district=?, zip_codes=?",
     [insert.insertId, "JhatkaByte Admin", "", "", JSON.stringify([])]
   );
-
-  console.log(`Admin user created: ${email}`);
 }
 
 main()

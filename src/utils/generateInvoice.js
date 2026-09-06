@@ -31,7 +31,6 @@ function splitAddressIntoTwoLines(address, maxLineLength = 42) {
 }
 
 const generateInvoice = async (orderArr, cartInfo, orderId, deliveryDates, list) => {
-  console.log("orderArr = ", orderArr);
   const addressLines = splitAddressIntoTwoLines(orderArr[2]);
   return `
   <!DOCTYPE html>
@@ -116,10 +115,10 @@ const generateInvoice = async (orderArr, cartInfo, orderId, deliveryDates, list)
               const { name, quantity, price, unit, count, delivery_date } = item;
               return `
             <tr>
-              <td>${name}</td>
-              <td>${delivery_date}</td>
-              <td>${quantity}${unit} X ${count}</td>
-              <td>${price * count}</td>
+              <td>${escapeHtml(name)}</td>
+              <td>${escapeHtml(delivery_date)}</td>
+              <td>${escapeHtml(quantity)}${escapeHtml(unit)} X ${escapeHtml(count)}</td>
+              <td>${escapeHtml(price * count)}</td>
             </tr>
           `;
             })
@@ -150,7 +149,6 @@ const convertHtmlToPdf = async (html, pdfPath) => {
     if (err) {
       console.error("Error converting HTML to PDF:", err);
     } else {
-      console.log("PDF created:", res.filename);
     }
   });
 };
@@ -219,7 +217,6 @@ const convertHtmlToPdfBuffer = async (html) => {
   return new Promise((resolve, reject) => {
     htmlToPdf.create(html, pdfOptions).toBuffer((err, buffer) => {
       if (err) {
-        console.log("html-pdf failed, using built-in PDF fallback:", err);
         return resolve(createSimplePdfBuffer(stripHtml(html)));
       }
       resolve(buffer);

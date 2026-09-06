@@ -38,12 +38,10 @@ const validateLogin = async ({ email, password }) => {
 };
 
 const doLogin = async (postData) => {
-  console.log("postData = ", postData);
   try {
     const { email, password } = postData;
     const sql = "SELECT * FROM `tbl_users` WHERE `email` = ?";
     const check = await runMysqlQueryWithParam(sql, [email.trim().toLowerCase()]);
-    console.log("check = ", check);
     if (check.length && check[0].status == 1) {
       const { id, role_id, name, phone_number, status } = check[0];
       if (role_id !== 1 && role_id !== 2 && role_id !== 3) return { status: false, statusCode: 403, msg: "User not authorized." };
@@ -81,7 +79,6 @@ const doLogin = async (postData) => {
       }
     } else return { status: false, statusCode: 401, msg: "Credentials did not match with any user or user is inactive.Please contact admin." };
   } catch (e) {
-    console.log(e);
     return { status: false, statusCode: 500, msg: "Please try again." };
   }
 };
@@ -114,10 +111,9 @@ const doForgotPassword = async ({ email }) => {
         </h3>
       </div>
     </div>
-    <div className="col-md-12">Your new password is ${newPassword}</div>
+    <div className="col-md-12">Your new password is ${randomPassword}</div>
   `;
   const subject = `Jhatka Byte New Password For Login`;
-  console.log("bodyHtml = ", bodyHtml);
   sendEmail(email.trim().toLowerCase(), subject, bodyHtml);
 
   return {

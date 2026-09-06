@@ -20,6 +20,10 @@ CREATE TABLE IF NOT EXISTS public.tbl_user_addresses (
   label varchar(60) default 'Home',
   recipient_name varchar(80),
   phone_number varchar(12),
+  house_apartment text,
+  street_name text,
+  locality varchar(100),
+  city varchar(80),
   street text,
   district varchar(45),
   state varchar(45),
@@ -35,6 +39,10 @@ let addressBookReady = false;
 const ensureAddressBookTable = async () => {
   if (addressBookReady) return;
   await runMysqlQuery(ADDRESS_TABLE_SQL);
+  await runMysqlQuery(`ALTER TABLE public.tbl_user_addresses ADD COLUMN IF NOT EXISTS house_apartment text`);
+  await runMysqlQuery(`ALTER TABLE public.tbl_user_addresses ADD COLUMN IF NOT EXISTS street_name text`);
+  await runMysqlQuery(`ALTER TABLE public.tbl_user_addresses ADD COLUMN IF NOT EXISTS locality varchar(100)`);
+  await runMysqlQuery(`ALTER TABLE public.tbl_user_addresses ADD COLUMN IF NOT EXISTS city varchar(80)`);
   await runMysqlQuery(`CREATE INDEX IF NOT EXISTS tbl_user_addresses_user_index ON public.tbl_user_addresses (user_id)`);
   await runMysqlQuery(`CREATE UNIQUE INDEX IF NOT EXISTS tbl_user_addresses_one_default ON public.tbl_user_addresses (user_id) WHERE is_default = true`);
   addressBookReady = true;
@@ -52,7 +60,6 @@ const getFranchiseForPincode = async (pincode) => {
 const getCurrentUser = async (userId, roleId) => {
   try {
     if (Number(roleId) === 4) {
-      console.log("userId = ", userId);
       await ensureAddressBookTable();
       const sql = `SELECT u.id, u.email, u.name, u.phone_number, u.status, d.street, d.district, d.state, d.landmark, d.pin_code FROM tbl_users u LEFT JOIN tbl_user_details d ON u.id=d.user_id WHERE u.role_id=4 AND u.id=?`;
       const check = await runMysqlQueryWithParam(sql, [userId]);
@@ -116,7 +123,6 @@ const getDistrictList = async () => {
 };
 
 const addUserAddress = async (street, state, district, pincode, landmark, user_id) => {
-  console.log("user_id = ", user_id);
   try {
     await ensureAddressBookTable();
     const normalizedPincode = `${pincode || ""}`.trim();
@@ -160,14 +166,13 @@ const addUserAddress = async (street, state, district, pincode, landmark, user_i
       responseObj: { street, state, district: normalizedDistrict, pin_code: normalizedPincode, landmark },
     };
   } catch (e) {
-    console.log(e);
     return { status: false, msg: "Could not update address. Please try again", responseObj: [] };
   }
 };
 
 const validateAddressData = async (data) => {
   const normalizedPincode = `${data?.pincode || data?.pin_code || ""}`.trim();
-  const normalizedDistrict = `${data?.district || ""}`.trim();
+  const normalizedDistrict = `${data?.district || data?.city || ""}`.trim();
   const franchise = await getFranchiseForPincode(normalizedPincode);
   if (!normalizedPincode || !franchise?.user_id) {
     return { status: false, msg: OUT_OF_SERVICE_MSG };
@@ -184,7 +189,7 @@ const getUserAddressList = async (user_id) => {
   try {
     await ensureAddressBookTable();
     const list = await runMysqlQueryWithParam(
-      `SELECT id, label, recipient_name, phone_number, street, district, state, landmark, pin_code, is_default
+      `SELECT id, label, recipient_name, phone_number, house_apartment, street_name, locality, city, street, district, state, landmark, pin_code, is_default
        FROM tbl_user_addresses WHERE user_id=? ORDER BY is_default DESC, id DESC`,
       [user_id]
     );
@@ -203,7 +208,6 @@ const getUserAddressList = async (user_id) => {
     }
     return { status: true, msg: "Address list fetched successfully", responseObj: list };
   } catch (e) {
-    console.log(e);
     return { status: false, msg: "Could not fetch address book. Please try again", responseObj: [] };
   }
 };
@@ -217,14 +221,20 @@ const saveUserAddress = async (data, user_id) => {
     const label = `${data.label || "Home"}`.trim() || "Home";
     const recipientName = `${data.recipient_name || data.recipientName || ""}`.trim() || null;
     const phoneNumber = `${data.phone_number || data.phoneNumber || ""}`.trim() || null;
-    const street = `${data.street || ""}`.trim();
+    const houseApartment = `${data.house_apartment || data.houseApartment || ""}`.trim();
+    const streetName = `${data.street_name || data.streetName || ""}`.trim();
+    const locality = `${data.locality || ""}`.trim();
+    const city = `${data.city || validation.district || ""}`.trim();
+    const street = `${data.street || [houseApartment, streetName, locality].filter(Boolean).join(", ")}`.trim();
     const state = `${data.state || "West Bengal"}`.trim();
     const landmark = `${data.landmark || ""}`.trim();
     const addressId = Number(data.id || 0);
     const existing = await runMysqlQueryWithParam("SELECT id FROM tbl_user_addresses WHERE user_id=?", [user_id]);
     const shouldBeDefault = data.isDefault === true || data.is_default === true || !existing.length;
 
-    if (!street) return { status: false, msg: "Please enter your street", responseObj: [] };
+    if (!houseApartment && !street) return { status: false, msg: "Please enter house number and apartment name", responseObj: [] };
+    if (!streetName && !street) return { status: false, msg: "Please enter street name", responseObj: [] };
+    if (!locality && !street) return { status: false, msg: "Please enter locality name", responseObj: [] };
 
     if (shouldBeDefault) {
       await runMysqlQueryWithParam("UPDATE tbl_user_addresses SET is_default=false WHERE user_id=?", [user_id]);
@@ -234,17 +244,17 @@ const saveUserAddress = async (data, user_id) => {
     if (addressId) {
       const update = await runMysqlQueryWithParam(
         `UPDATE tbl_user_addresses
-         SET label=?, recipient_name=?, phone_number=?, street=?, state=?, district=?, pin_code=?, landmark=?, is_default=?, updated_at=now()
+         SET label=?, recipient_name=?, phone_number=?, house_apartment=?, street_name=?, locality=?, city=?, street=?, state=?, district=?, pin_code=?, landmark=?, is_default=?, updated_at=now()
          WHERE id=? AND user_id=?`,
-        [label, recipientName, phoneNumber, street, state, validation.district, validation.pincode, landmark, shouldBeDefault, addressId, user_id]
+        [label, recipientName, phoneNumber, houseApartment || null, streetName || null, locality || null, city || validation.district, street, state, validation.district, validation.pincode, landmark, shouldBeDefault, addressId, user_id]
       );
       if (!update.affectedRows) return { status: false, msg: "Address not found", responseObj: [] };
     } else {
       const insert = await runMysqlQueryWithParam(
         `INSERT INTO tbl_user_addresses
-         (user_id, label, recipient_name, phone_number, street, state, district, pin_code, landmark, is_default)
-         VALUES (?,?,?,?,?,?,?,?,?,?)`,
-        [user_id, label, recipientName, phoneNumber, street, state, validation.district, validation.pincode, landmark, shouldBeDefault]
+         (user_id, label, recipient_name, phone_number, house_apartment, street_name, locality, city, street, state, district, pin_code, landmark, is_default)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+        [user_id, label, recipientName, phoneNumber, houseApartment || null, streetName || null, locality || null, city || validation.district, street, state, validation.district, validation.pincode, landmark, shouldBeDefault]
       );
       savedId = insert.insertId;
     }
@@ -257,7 +267,6 @@ const saveUserAddress = async (data, user_id) => {
     const savedAddress = addressList.responseObj.find((item) => Number(item.id) === Number(savedId)) || addressList.responseObj[0];
     return { status: true, msg: addressId ? "Address updated successfully" : "Address saved successfully", responseObj: { savedAddress, addressList: addressList.responseObj } };
   } catch (e) {
-    console.log(e);
     return { status: false, msg: "Could not save address. Please try again", responseObj: [] };
   }
 };
@@ -285,7 +294,6 @@ const setDefaultUserAddress = async (addressId, user_id) => {
     const addressList = await getUserAddressList(user_id);
     return { status: true, msg: "Default address updated successfully", responseObj: addressList.responseObj };
   } catch (e) {
-    console.log(e);
     return { status: false, msg: "Could not update default address. Please try again", responseObj: [] };
   }
 };
@@ -300,7 +308,6 @@ const deleteUserAddress = async (addressId, user_id) => {
     const addressList = await getUserAddressList(user_id);
     return { status: true, msg: "Address deleted successfully", responseObj: addressList.responseObj };
   } catch (e) {
-    console.log(e);
     return { status: false, msg: "Could not delete address. Please try again", responseObj: [] };
   }
 };
@@ -323,7 +330,6 @@ const updateUserAccount = async (formData, email) => {
       return { status: false, msg: "User not permitted to update account information", responseObj: [] };
     }
   } catch (e) {
-    console.log(e);
     return { status: false, msg: "Could not update user information. Please try again", responseObj: [] };
   }
 };

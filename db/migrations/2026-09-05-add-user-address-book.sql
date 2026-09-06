@@ -4,6 +4,10 @@ CREATE TABLE IF NOT EXISTS public.tbl_user_addresses (
   label varchar(60) default 'Home',
   recipient_name varchar(80),
   phone_number varchar(12),
+  house_apartment text,
+  street_name text,
+  locality varchar(100),
+  city varchar(80),
   street text,
   district varchar(45),
   state varchar(45),
@@ -13,6 +17,11 @@ CREATE TABLE IF NOT EXISTS public.tbl_user_addresses (
   inserted_at timestamptz default now(),
   updated_at timestamptz default now()
 );
+
+ALTER TABLE public.tbl_user_addresses ADD COLUMN IF NOT EXISTS house_apartment text;
+ALTER TABLE public.tbl_user_addresses ADD COLUMN IF NOT EXISTS street_name text;
+ALTER TABLE public.tbl_user_addresses ADD COLUMN IF NOT EXISTS locality varchar(100);
+ALTER TABLE public.tbl_user_addresses ADD COLUMN IF NOT EXISTS city varchar(80);
 
 CREATE INDEX IF NOT EXISTS tbl_user_addresses_user_index
   ON public.tbl_user_addresses (user_id);
