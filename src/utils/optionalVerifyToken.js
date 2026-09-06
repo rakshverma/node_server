@@ -17,6 +17,8 @@ async function optionalVerifyToken(req, res, next) {
     req.role_id = tokenData.role_id;
     return next();
   } catch (error) {
+    const requestedUserId = Number(req.body?.userId || req.query?.userId || 0);
+    if (!requestedUserId) return next();
     return response.send(res, 401, 2, "Failed to authenticate token.", {});
   }
 }
