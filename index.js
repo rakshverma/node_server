@@ -73,7 +73,7 @@ app.get(["/uploads/*", "/upload/*"], async (req, res) => {
     const signedUrl = await createSignedUrl(filePath);
     return res.redirect(signedUrl);
   } catch (error) {
-    console.log("Storage redirect error = ", error);
+    console.error("Storage redirect failed");
     return res.status(404).send({ error: "File not found" });
   }
 });
@@ -88,7 +88,7 @@ app.use(function (req, res, next) {
 });
 
 app.use(function (err, req, res, next) {
-  console.log("Error " + err, "Req " + req.method + " " + req.protocol + "://" + req.get("host") + req.originalUrl);
+  console.error("Request failed", { method: req.method, status: err.status || 500 });
   res.status(err.status || 500).send({ error: "Request: Not Found" });
 });
 
