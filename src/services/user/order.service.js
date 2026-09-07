@@ -59,6 +59,9 @@ const DELIVERY_STATUS = {
   CANCELED: 4,
 };
 
+const ADDRESS_BOOK_LIMIT = 6;
+const PINCODE_MISMATCH_MESSAGE = "Go to change pincode option and enter the pincode which has to be same as shipment pincode";
+
 function isFutureDeliveryDate(deliveryDate) {
   const value = `${deliveryDate || ""}`.trim();
   if (!value) return false;
@@ -208,6 +211,8 @@ async function saveCheckoutAddress(connection, userId, formData, makeDefault = f
     );
   } else {
     if (matching.length) return;
+    const addressCount = await runTransectionQuery(connection, "SELECT COUNT(*) AS total FROM tbl_user_addresses WHERE user_id=?", [userId]);
+    if (Number(addressCount?.[0]?.total || 0) >= ADDRESS_BOOK_LIMIT) return;
     if (makeDefault) {
       await runTransectionQuery(connection, "UPDATE tbl_user_addresses SET is_default=false WHERE user_id=?", [userId]);
     }
@@ -296,7 +301,7 @@ const addOrderDetails = async (formData, cartId, deliveryDates, existingUserId, 
     if (unavailableNames.length) {
       return {
         status: false,
-        msg: "Few cart items are no longer available for this pincode. Please remove them and try again.",
+        msg: PINCODE_MISMATCH_MESSAGE,
         responseObj: unavailableNames,
       };
     }

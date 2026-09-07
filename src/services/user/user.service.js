@@ -12,6 +12,7 @@ const {
 const { generateRandomString } = require("../../utils/utilityFunctions");
 
 const OUT_OF_SERVICE_MSG = "Out of service area definition";
+const ADDRESS_BOOK_LIMIT = 6;
 
 const ADDRESS_TABLE_SQL = `
 CREATE TABLE IF NOT EXISTS public.tbl_user_addresses (
@@ -254,6 +255,9 @@ const saveUserAddress = async (data, user_id) => {
       );
       if (!update.affectedRows) return { status: false, msg: "Address not found", responseObj: [] };
     } else {
+      if (existing.length >= ADDRESS_BOOK_LIMIT) {
+        return { status: false, msg: `You can save up to ${ADDRESS_BOOK_LIMIT} addresses only. Please edit or delete an address to add a new one.`, responseObj: [] };
+      }
       const insert = await runMysqlQueryWithParam(
         `INSERT INTO tbl_user_addresses
          (user_id, label, recipient_name, phone_number, house_apartment, street_name, locality, city, street, state, district, pin_code, landmark, is_default)
